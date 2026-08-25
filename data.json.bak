@@ -181,7 +181,58 @@
       "fifo_cost": 2000,
       "profit": 1000,
       "timestamp": "2026-08-14 14:08"
+    },
+    {
+      "id": 7,
+      "type": "SELL",
+      "item_id": 2,
+      "item_name": "Reflecting Mist",
+      "quantity": 4,
+      "payment_currency": "CHAOS",
+      "entered_price": 600,
+      "unit_price_chaos": 600,
+      "total_chaos": 2400,
+      "gold_spent": 0,
+      "gold_chaos": 0,
+      "gold_rate": {
+        "gold_amount": 150000,
+        "chaos_value": 250,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "gold_amount": 1000000,
+            "chaos_value": 200
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 205,
+            "chaos_value": 1
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 1500000,
+            "chaos_value": 250
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "gold_amount": 150000,
+            "chaos_value": 250
+          }
+        ]
+      },
+      "divine_rate": null,
+      "fifo_allocations": [
+        {
+          "buy_transaction_id": 1,
+          "quantity": 4,
+          "unit_cost_chaos": 400,
+          "total_cost_chaos": 1600
+        }
+      ],
+      "fifo_cost": 1600,
+      "profit": 800,
+      "timestamp": "2026-08-14 15:01"
     }
   ],
-  "next_transaction_id": 7
+  "next_transaction_id": 8
 }
