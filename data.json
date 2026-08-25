@@ -276,7 +276,308 @@
       "fifo_cost": 0,
       "profit": 0,
       "timestamp": "2026-08-14 16:38"
+    },
+    {
+      "id": 9,
+      "type": "BUY",
+      "item_id": 2,
+      "item_name": "Reflecting Mist",
+      "quantity": 4,
+      "payment_currency": "DIVINE",
+      "entered_price": 500,
+      "unit_price_chaos": 101000,
+      "total_chaos": 404000,
+      "gold_spent": 0,
+      "gold_chaos": 0,
+      "gold_rate": {
+        "gold_amount": 150000,
+        "chaos_value": 250,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "gold_amount": 1000000,
+            "chaos_value": 200
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 205,
+            "chaos_value": 1
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 1500000,
+            "chaos_value": 250
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "gold_amount": 150000,
+            "chaos_value": 250
+          }
+        ]
+      },
+      "divine_rate": {
+        "divine_amount": 1,
+        "chaos_value": 202,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "divine_amount": 1,
+            "chaos_value": 180
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 204,
+            "chaos_value": 102
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:30",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:31",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:33",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 20
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 203
+          },
+          {
+            "timestamp": "2026-08-14 14:40",
+            "divine_amount": 1,
+            "chaos_value": 202
+          }
+        ]
+      },
+      "fifo_allocations": [],
+      "fifo_cost": 0,
+      "profit": 0,
+      "timestamp": "2026-08-25 16:30"
+    },
+    {
+      "id": 10,
+      "type": "BUY",
+      "item_id": 2,
+      "item_name": "Reflecting Mist",
+      "quantity": 5,
+      "payment_currency": "DIVINE",
+      "entered_price": 5,
+      "unit_price_chaos": 1010,
+      "total_chaos": 5050,
+      "gold_spent": 0,
+      "gold_chaos": 0,
+      "gold_rate": {
+        "gold_amount": 150000,
+        "chaos_value": 250,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "gold_amount": 1000000,
+            "chaos_value": 200
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 205,
+            "chaos_value": 1
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 1500000,
+            "chaos_value": 250
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "gold_amount": 150000,
+            "chaos_value": 250
+          }
+        ]
+      },
+      "divine_rate": {
+        "divine_amount": 1,
+        "chaos_value": 202,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "divine_amount": 1,
+            "chaos_value": 180
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 204,
+            "chaos_value": 102
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:30",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:31",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:33",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 20
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 203
+          },
+          {
+            "timestamp": "2026-08-14 14:40",
+            "divine_amount": 1,
+            "chaos_value": 202
+          }
+        ]
+      },
+      "fifo_allocations": [],
+      "fifo_cost": 0,
+      "profit": 0,
+      "timestamp": "2026-08-25 16:34"
+    },
+    {
+      "id": 11,
+      "type": "SELL",
+      "item_id": 2,
+      "item_name": "Reflecting Mist",
+      "quantity": 10,
+      "payment_currency": "DIVINE",
+      "entered_price": 22,
+      "unit_price_chaos": 4444,
+      "total_chaos": 44440,
+      "gold_spent": 0,
+      "gold_chaos": 0,
+      "gold_rate": {
+        "gold_amount": 150000,
+        "chaos_value": 250,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "gold_amount": 1000000,
+            "chaos_value": 200
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 205,
+            "chaos_value": 1
+          },
+          {
+            "timestamp": "2026-08-14 14:27",
+            "gold_amount": 1500000,
+            "chaos_value": 250
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "gold_amount": 150000,
+            "chaos_value": 250
+          }
+        ]
+      },
+      "divine_rate": {
+        "divine_amount": 1,
+        "chaos_value": 202,
+        "history": [
+          {
+            "timestamp": "2026-08-14 13:20",
+            "divine_amount": 1,
+            "chaos_value": 180
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 204,
+            "chaos_value": 102
+          },
+          {
+            "timestamp": "2026-08-14 14:28",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:30",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:31",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:33",
+            "divine_amount": 1,
+            "chaos_value": 204
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 20
+          },
+          {
+            "timestamp": "2026-08-14 14:35",
+            "divine_amount": 1,
+            "chaos_value": 203
+          },
+          {
+            "timestamp": "2026-08-14 14:40",
+            "divine_amount": 1,
+            "chaos_value": 202
+          }
+        ]
+      },
+      "fifo_allocations": [
+        {
+          "buy_transaction_id": 1,
+          "quantity": 1,
+          "unit_cost_chaos": 400,
+          "total_cost_chaos": 400
+        },
+        {
+          "buy_transaction_id": 4,
+          "quantity": 5,
+          "unit_cost_chaos": 500,
+          "total_cost_chaos": 2500
+        },
+        {
+          "buy_transaction_id": 8,
+          "quantity": 4,
+          "unit_cost_chaos": 200,
+          "total_cost_chaos": 800
+        }
+      ],
+      "fifo_cost": 3700,
+      "profit": 40740,
+      "timestamp": "2026-08-25 16:34"
     }
   ],
-  "next_transaction_id": 9
+  "next_transaction_id": 12
 }
