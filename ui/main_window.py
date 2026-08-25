@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QLabel,
     QFrame,
+    QPushButton,
 )
 from PySide6.QtCore import Qt
 
@@ -52,17 +53,29 @@ class GalaxyHideout(QMainWindow):
         # HIDEOUT HEADER
         # =====================================================
 
+        header_layout = QHBoxLayout()
+
         hideout_title = QLabel("GALAXY HIDEOUT")
         hideout_title.setObjectName("hideoutTitle")
 
-        content_layout.addWidget(hideout_title)
+        header_layout.addWidget(hideout_title)
+
+        header_layout.addStretch()
+
+        open_trade_button = QPushButton("+ OPEN TRADE")
+        open_trade_button.setObjectName("openTradeButton")
+
+        header_layout.addWidget(open_trade_button)
+
+        content_layout.addLayout(header_layout)
 
         # =====================================================
         # SUMMARY
         # =====================================================
 
         summary_layout = QHBoxLayout()
-        summary_layout.setSpacing(15)
+        summary_layout.setSpacing(12)
+           
 
         profit_box = self._create_summary_box(
             "PROFIT",
@@ -81,6 +94,10 @@ class GalaxyHideout(QMainWindow):
         summary_layout.addWidget(profit_box)
         summary_layout.addWidget(trades_box)
         summary_layout.addWidget(inventory_box)
+
+        summary_layout.setStretch(0, 1)
+        summary_layout.setStretch(1, 1)
+        summary_layout.setStretch(2, 1)
 
         content_layout.addLayout(summary_layout)
 
@@ -169,21 +186,23 @@ class GalaxyHideout(QMainWindow):
 
         sidebar_layout.addSpacing(20)
 
-        sidebar_layout.addWidget(
-            QLabel("OVERVIEW")
-        )
+        sidebar_items = [
+            "OVERVIEW",
+            "TRADES",
+            "INVENTORY",
+            "SETTINGS",
+        ]
 
-        sidebar_layout.addWidget(
-            QLabel("TRADES")
-        )
+        for item in sidebar_items:
 
-        sidebar_layout.addWidget(
-            QLabel("INVENTORY")
-        )
+            label = QLabel(item)
 
-        sidebar_layout.addWidget(
-            QLabel("SETTINGS")
-        )
+            if item == "OVERVIEW":
+                label.setObjectName("sidebarItemActive")
+            else:
+                label.setObjectName("sidebarItem")
+
+            sidebar_layout.addWidget(label)
 
         sidebar_layout.addStretch()
 
@@ -241,13 +260,13 @@ class GalaxyHideout(QMainWindow):
 
             #tradeTitle {
                 color: #eeeeff;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: bold;
             }
 
             #tradeInfo {
                 color: #aaaac8;
-                font-size: 13px;
+                font-size: 12px;
             }
 
             #tradeProfit {
@@ -292,7 +311,22 @@ class GalaxyHideout(QMainWindow):
                 padding: 12px;
                 color: #aaaac8;
                 font-size: 13px;
-            }                               
+            }
+            #sidebarItem {
+                color: #aaaac8;
+                font-size: 14px;
+                font-weight: bold;
+                padding: 10px;
+            }
+            #sidebarItemActive {
+                color: #eeeeff;
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                font-size: 14px;
+                font-weight: bold;
+                padding: 10px;
+            }                                  
 
         """)
 
@@ -330,15 +364,15 @@ class GalaxyHideout(QMainWindow):
         card = QFrame()
         card.setObjectName("tradeCard")
 
-        card.setMinimumHeight(150)
+        card.setFixedHeight(125)
 
         layout = QVBoxLayout(card)
 
         layout.setContentsMargins(
-            12,
             10,
-            12,
-            10
+            8,
+            10,
+            8
         )
 
         layout.setSpacing(6)
