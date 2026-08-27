@@ -36,6 +36,16 @@ class AssetService:
         self.provider = provider or PoeNinjaProvider()
         self.cache_dir = cache_dir or get_image_cache_dir()
 
+    def available_leagues(self):
+        """Live league list from poe.ninja (current temp league,
+        Standard, Hardcore, etc.), or an empty list if unreachable —
+        callers should fall back to locally-known leagues."""
+
+        try:
+            return self.provider.get_leagues()
+        except PoeNinjaUnavailable:
+            return []
+
     def refresh_catalog(self, league):
         """Fetches the live catalog, upserts Asset rows (new ones
         created, existing ones updated and marked seen, anything no
@@ -108,6 +118,23 @@ class AssetService:
 
         asset.icon_path = filename
 
+    def rebuild_image_cache(self, league):
+        """Directive 27: 'Rebuild cache' — wipes every cached icon
+        file and forgets each asset's icon_path, then re-downloads
+        everything from scratch. For when a cached image is missing
+        or corrupted, not for routine use (refresh_catalog already
+        covers picking up new/changed items)."""
+
+        for path in self.cache_dir.glob("*.png"):
+            path.unlink()
+
+        for asset in self.session.execute(select(Asset)).scalars().all():
+            asset.icon_path = None
+
+        self.session.commit()
+
+        return self.refresh_catalog(league)
+
     def icon_file_path(self, asset):
         """Absolute local path to a cached icon, or None if not
         cached. asset.icon_path itself stays a bare relative filename
@@ -128,6 +155,11 @@ class AssetService:
                 .order_by(Asset.name)
             ).scalars().all()
         )
+
+    def get_asset_by_name(self, name):
+        return self.session.execute(
+            select(Asset).where(Asset.name == name)
+        ).scalar_one_or_none()
 
     def get_asset(self, asset_id):
         return self.session.get(Asset, asset_id)

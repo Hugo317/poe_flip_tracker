@@ -18,6 +18,12 @@ def _now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+class TradeHasSalesError(Exception):
+    """Raised by delete_trade when the trade's inventory has already
+    been consumed by one or more sales (directive 30's protection for
+    BUYs already consumed by FIFO) — delete those sales first."""
+
+
 DEFAULT_LEAGUE_NAME = "Standard"
 DEFAULT_DIVINE_RATE = 200
 DEFAULT_GOLD_AMOUNT = 1_000_000
@@ -31,8 +37,10 @@ class TradeService:
     Trade (per-trade inventory, not global FIFO) per the locked
     architecture decision (directive Q18).
 
-    V1 has a single default league (no league picker UI yet — see
-    directive discussion), so `self.league` is fixed at construction.
+    Directive Q8: the active league persists across launches
+    (GlobalSettings.active_league_name) and is switchable at any time
+    via switch_league() — each league's trades/history stay isolated
+    by league_id.
     """
 
     def __init__(self, session=None):
@@ -43,21 +51,38 @@ class TradeService:
 
         self.session = session
 
-        self.league = self._get_or_create_league()
         self._settings_row = self._get_or_create_global_settings()
+
+        league_name = (
+            self._settings_row.active_league_name or DEFAULT_LEAGUE_NAME
+        )
+        self.league = self._get_or_create_league(league_name)
         self.trading_day = self._get_or_create_open_trading_day()
 
-    def _get_or_create_league(self):
+    def _get_or_create_league(self, name):
         league = self.session.execute(
-            select(League).where(League.name == DEFAULT_LEAGUE_NAME)
+            select(League).where(League.name == name)
         ).scalar_one_or_none()
 
         if league is None:
-            league = League(name=DEFAULT_LEAGUE_NAME)
+            league = League(name=name)
             self.session.add(league)
             self.session.commit()
 
         return league
+
+    def switch_league(self, league_name):
+        self.league = self._get_or_create_league(league_name)
+        self._settings_row.active_league_name = league_name
+        self.session.commit()
+
+        self.trading_day = self._get_or_create_open_trading_day()
+
+    def local_league_names(self):
+        return [
+            row.name for row in
+            self.session.execute(select(League)).scalars().all()
+        ]
 
     def _get_or_create_global_settings(self):
         settings = self.session.get(GlobalSettings, 1)
@@ -91,13 +116,42 @@ class TradeService:
         return day
 
     def start_new_trading_day(self):
+        stats = self.analytics_summary(self.trading_day.id)
+
         self.trading_day.closed_at = _now()
+        self.trading_day.snapshot_new_trades = stats["new_trades_count"]
+        self.trading_day.snapshot_carryover_sales = (
+            stats["carryover_sales_count"]
+        )
+        self.trading_day.snapshot_realized_profit = stats["today_profit"]
+        self.trading_day.snapshot_roi = stats["roi"]
+        self.trading_day.snapshot_revenue = stats["today_revenue"]
+        self.trading_day.snapshot_inventory_value = (
+            stats["inventory_value"]
+        )
+        self.trading_day.snapshot_gold_spent = stats["gold_spent_today"]
+        self.trading_day.snapshot_average_profit_per_trade = (
+            stats["average_profit_per_trade"]
+        )
+        self.trading_day.snapshot_completed_trades = (
+            stats["completed_trades_today"]
+        )
 
         new_day = TradingDay(league_id=self.league.id)
         self.session.add(new_day)
         self.session.commit()
 
         self.trading_day = new_day
+
+    def closed_trading_days(self):
+        return self.session.execute(
+            select(TradingDay)
+            .where(
+                TradingDay.league_id == self.league.id,
+                TradingDay.closed_at.is_not(None)
+            )
+            .order_by(TradingDay.id.desc())
+        ).scalars().all()
 
     # ---------------------------------------------------------------
     # RATES
@@ -296,6 +350,40 @@ class TradeService:
         return sale
 
     # ---------------------------------------------------------------
+    # DELETE (directive 30/42: strong confirmation is the UI's job;
+    # this layer only enforces the protection rule and keeps
+    # inventory/stats correct afterward — nothing else caches a
+    # derived value, so there is nothing else to recalculate.)
+    # ---------------------------------------------------------------
+
+    def delete_sale(self, sale_id):
+        sale = self.session.get(Sale, sale_id)
+
+        if sale is None:
+            raise ValueError(f"Sale {sale_id} not found.")
+
+        trade = sale.trade
+        trade.quantity_sold -= sale.quantity
+
+        self.session.delete(sale)
+        self.session.commit()
+
+    def delete_trade(self, trade_id):
+        trade = self.get_trade(trade_id)
+
+        if trade is None:
+            raise ValueError(f"Trade {trade_id} not found.")
+
+        if trade.quantity_sold > 0:
+            raise TradeHasSalesError(
+                f"Trade {trade_id} has {len(trade.sales)} sale(s) "
+                f"against it — delete those first."
+            )
+
+        self.session.delete(trade)
+        self.session.commit()
+
+    # ---------------------------------------------------------------
     # QUERIES
     # ---------------------------------------------------------------
 
@@ -310,6 +398,12 @@ class TradeService:
         ).scalars().all()
 
         return list(trades)
+
+    def open_trades_for_item(self, item_name):
+        return [
+            trade for trade in self.open_trades()
+            if trade.item_name == item_name
+        ]
 
     def latest_open_trades(self, limit=6):
         return self.open_trades()[:limit]
@@ -389,6 +483,7 @@ class TradeService:
             transactions.append({
                 "type": "BUY",
                 "trade_id": trade.id,
+                "sale_id": None,
                 "item": trade.item_name,
                 "quantity": trade.quantity_bought,
                 "currency": trade.currency,
@@ -405,6 +500,7 @@ class TradeService:
                 transactions.append({
                     "type": "SELL",
                     "trade_id": trade.id,
+                    "sale_id": sale.id,
                     "item": trade.item_name,
                     "quantity": sale.quantity,
                     "currency": sale.currency,
@@ -425,32 +521,25 @@ class TradeService:
         return transactions
 
     def recent_activity(self, limit=5):
-        activity = []
-
-        for transaction in self.all_transactions()[:limit]:
-            activity.append({
-                "type": transaction["type"],
-                "item": transaction["item"],
-                "quantity": transaction["quantity"],
-                "total_chaos": transaction["total_chaos"],
-                "profit": transaction["profit"],
-                "timestamp": transaction["timestamp"]
-            })
-
-        return activity
+        return self.all_transactions()[:limit]
 
     # ---------------------------------------------------------------
     # ANALYTICS
     # ---------------------------------------------------------------
 
-    def analytics_summary(self):
-        """Everything the Analytics overlay needs for the current
-        Trading Day, in one call. ROI and New Trades vs Carry-over
-        Sales follow the locked accounting rules (directive Q18/19):
-        a partially-sold new trade contributes only the sold portion,
+    def analytics_summary(self, trading_day_id=None):
+        """Everything the Analytics overlay needs for one Trading Day
+        (the current one by default, or any other by id — used both
+        for the live "Today" view and to freeze a historical snapshot
+        when a day closes). ROI and New Trades vs Carry-over Sales
+        follow the locked accounting rules (directive Q18/19): a
+        partially-sold new trade contributes only the sold portion,
         and Gold is never mixed into trading profit/ROI."""
 
-        today_id = self.trading_day.id
+        today_id = (
+            trading_day_id if trading_day_id is not None
+            else self.trading_day.id
+        )
 
         all_trades = self.session.execute(
             select(Trade).where(Trade.league_id == self.league.id)
@@ -538,7 +627,15 @@ class TradeService:
             reverse=True
         )
 
+        # Unrealized inventory is valued at cost price (directive
+        # Q30) and reflects ALL currently open trades, not just ones
+        # opened on this particular day — inventory carries over.
+        inventory_value = sum(
+            trade.invested_chaos for trade in all_trades if trade.is_open
+        )
+
         return {
+            "inventory_value": inventory_value,
             "today_profit": today_profit,
             "today_revenue": today_revenue,
             "today_cost": today_cost,

@@ -28,15 +28,14 @@ pip install -r requirements.txt
 
 Data is stored locally in SQLite at `data/divineflipper.db` (gitignored
 — it's per-machine user data, not something to commit), managed with
-Alembic migrations. Before the first run, create the database:
+Alembic migrations. The app applies migrations itself automatically at
+every launch (`backend/migrations.py`, called at the top of `main()`)
+— no manual `alembic upgrade head` needed, including for a first-ever
+run or after pulling a new `alembic/versions/*.py` migration.
 
-```bash
-source ~/.venvs/poe_flip_tracker/bin/activate
-alembic upgrade head
-```
-
-Run this again after pulling any change that adds a new
-`alembic/versions/*.py` migration file.
+Running `alembic` commands by hand (e.g. `alembic revision
+--autogenerate`) is still how you *create* a new migration during
+development — just not how it gets applied anymore.
 
 ## Asset catalog & image cache
 

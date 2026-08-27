@@ -1,0 +1,55 @@
+name: Build DivineFlipper
+
+# Manual trigger only — this compiles a full standalone app for both
+# platforms, not something that needs to run on every push.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: pyinstaller divineflipper.spec --noconfirm
+
+      - name: Zip the .app bundle
+        run: ditto -c -k --sequesterRsrc --keepParent dist/DivineFlipper.app dist/DivineFlipper-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DivineFlipper-macOS
+          path: dist/DivineFlipper-macOS.zip
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: pyinstaller divineflipper.spec --noconfirm
+
+      - name: Zip the app folder
+        run: Compress-Archive -Path dist/DivineFlipper -DestinationPath dist/DivineFlipper-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DivineFlipper-Windows
+          path: dist/DivineFlipper-Windows.zip
