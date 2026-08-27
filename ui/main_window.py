@@ -1653,6 +1653,7 @@ class SettingsPage(QWidget):
         content_layout.setSpacing(20)
 
         content_layout.addWidget(self._build_general_section())
+        content_layout.addWidget(self._build_trading_day_section())
         content_layout.addWidget(self._build_rates_section())
         content_layout.addWidget(self._build_assets_section())
         content_layout.addWidget(self._build_appearance_section())
@@ -1712,6 +1713,43 @@ class SettingsPage(QWidget):
         layout.addWidget(note)
 
         return section
+
+    # -----------------------------------------------------
+    # TRADING DAY
+    # -----------------------------------------------------
+
+    def _build_trading_day_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("TRADING DAY")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        self.trading_day_label = QLabel("")
+        self.trading_day_label.setObjectName("tradeInfo")
+        layout.addWidget(self.trading_day_label)
+
+        start_new_day_button = QPushButton("START NEW TRADING DAY")
+        start_new_day_button.setObjectName("primaryButton")
+        start_new_day_button.clicked.connect(
+            self._start_new_trading_day
+        )
+        layout.addWidget(start_new_day_button)
+
+        note = QLabel(
+            "Resets Today's Profit tracking going forward. Does not "
+            "affect lifetime totals or past trades."
+        )
+        note.setObjectName("tradeInfo")
+        layout.addWidget(note)
+
+        return section
+
+    def _start_new_trading_day(self):
+        self.trade_service.start_new_trading_day()
+        self.refresh()
+        self.on_settings_changed()
 
     # -----------------------------------------------------
     # RATES
@@ -1839,6 +1877,11 @@ class SettingsPage(QWidget):
     # -----------------------------------------------------
 
     def refresh(self):
+        self.trading_day_label.setText(
+            f"Current Trading Day started: "
+            f"{self.trade_service.trading_day.started_at}"
+        )
+
         self.divine_current_label.setText(
             f"Current: 1 Divine = {self.trade_service.divine_rate}c"
         )

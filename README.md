@@ -24,6 +24,20 @@ source ~/.venvs/poe_flip_tracker/bin/activate
 pip install -r requirements.txt
 ```
 
+## Database
+
+Data is stored locally in SQLite at `data/divineflipper.db` (gitignored
+— it's per-machine user data, not something to commit), managed with
+Alembic migrations. Before the first run, create the database:
+
+```bash
+source ~/.venvs/poe_flip_tracker/bin/activate
+alembic upgrade head
+```
+
+Run this again after pulling any change that adds a new
+`alembic/versions/*.py` migration file.
+
 ## Run
 
 ```bash
