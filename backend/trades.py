@@ -184,6 +184,36 @@ class TradeService:
     def stash_count(self):
         return sum(trade.remaining for trade in self.trades)
 
+    def stash_summary(self):
+        """Inventory grouped by item across all open trades (isolated
+        per-trade inventory, summed for display) — quantity and FIFO
+        cost basis only, per the locked Stash spec."""
+
+        summary = {}
+
+        for trade in self.trades:
+            if trade.remaining <= 0:
+                continue
+
+            entry = summary.setdefault(
+                trade.item_name,
+                {
+                    "item_name": trade.item_name,
+                    "quantity": 0,
+                    "cost_chaos": 0
+                }
+            )
+
+            entry["quantity"] += trade.remaining
+            entry["cost_chaos"] += (
+                trade.remaining * trade.unit_price_chaos
+            )
+
+        return sorted(
+            summary.values(),
+            key=lambda entry: entry["item_name"]
+        )
+
     def today_profit(self):
         return sum(trade.realized_profit for trade in self.trades)
 

@@ -287,7 +287,7 @@ class GalaxyHideout(QMainWindow):
 
     def refresh_all(self):
         self.refresh_hideout()
-        self.overlay.refresh_faustus()
+        self.overlay.refresh()
 
     def refresh_hideout(self):
         service = self.trade_service
@@ -738,8 +738,12 @@ class OverlayPanel(QFrame):
         self._pages["FAUSTUS"] = self.faustus_page
         self.stack.addWidget(self.faustus_page)
 
+        self.stash_page = StashPage(trade_service)
+        self._pages["STASH"] = self.stash_page
+        self.stack.addWidget(self.stash_page)
+
         for section in SIDEBAR_SECTIONS:
-            if section == "FAUSTUS":
+            if section in ("FAUSTUS", "STASH"):
                 continue
 
             page = self._build_placeholder_page(section)
@@ -754,8 +758,9 @@ class OverlayPanel(QFrame):
         self.title_label.setText(section_name)
         self.stack.setCurrentWidget(self._pages[section_name])
 
-    def refresh_faustus(self):
+    def refresh(self):
         self.faustus_page.refresh()
+        self.stash_page.refresh()
 
     def _handle_close(self):
         self._on_close()
@@ -1191,6 +1196,83 @@ class FaustusPage(QWidget):
             column = index % 3
 
             self.trades_grid.addWidget(card, row, column)
+
+
+# =============================================================
+# STASH PAGE — read-only current inventory
+# =============================================================
+
+class StashPage(QWidget):
+
+    def __init__(self, trade_service, parent=None):
+        super().__init__(parent)
+
+        self.trade_service = trade_service
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+
+        self.grid = QGridLayout()
+        self.grid.setSpacing(10)
+        layout.addLayout(self.grid)
+
+        layout.addStretch()
+
+    def refresh(self):
+        clear_layout(self.grid)
+
+        summary = self.trade_service.stash_summary()
+
+        if not summary:
+            self.grid.addWidget(
+                build_empty_state("Stash is empty."),
+                0, 0, 1, 3
+            )
+            return
+
+        headers = ["ITEM", "QUANTITY", "COST BASIS"]
+
+        for column, text in enumerate(headers):
+            header_label = QLabel(text)
+            header_label.setObjectName("formLabel")
+            self.grid.addWidget(header_label, 0, column)
+
+        total_quantity = 0
+        total_cost = 0
+
+        row = 1
+
+        for entry in summary:
+            item_label = QLabel(entry["item_name"])
+            item_label.setObjectName("tradeTitle")
+
+            quantity_label = QLabel(str(entry["quantity"]))
+            quantity_label.setObjectName("tradeInfo")
+
+            cost_label = QLabel(f"{entry['cost_chaos']:,}c")
+            cost_label.setObjectName("tradeInfo")
+
+            self.grid.addWidget(item_label, row, 0)
+            self.grid.addWidget(quantity_label, row, 1)
+            self.grid.addWidget(cost_label, row, 2)
+
+            total_quantity += entry["quantity"]
+            total_cost += entry["cost_chaos"]
+
+            row += 1
+
+        total_item_label = QLabel("TOTAL")
+        total_item_label.setObjectName("formLabel")
+
+        total_quantity_label = QLabel(str(total_quantity))
+        total_quantity_label.setObjectName("formLabel")
+
+        total_cost_label = QLabel(f"{total_cost:,}c")
+        total_cost_label.setObjectName("formLabel")
+
+        self.grid.addWidget(total_item_label, row, 0)
+        self.grid.addWidget(total_quantity_label, row, 1)
+        self.grid.addWidget(total_cost_label, row, 2)
 
 
 def main():
