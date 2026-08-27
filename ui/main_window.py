@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QScrollArea,
     QDialog,
+    QCheckBox,
 )
 from PySide6.QtCore import Qt
 
@@ -106,6 +107,26 @@ def build_trade_card(trade, interactive, on_sell=None):
         layout.addWidget(sell_button)
 
     return card
+
+
+def build_summary_box(title):
+
+    box = QFrame()
+    box.setObjectName("summaryBox")
+
+    layout = QVBoxLayout(box)
+    layout.setContentsMargins(15, 12, 15, 12)
+
+    title_label = QLabel(title)
+    title_label.setObjectName("summaryTitle")
+
+    value_label = QLabel("")
+    value_label.setObjectName("summaryValue")
+
+    layout.addWidget(title_label)
+    layout.addWidget(value_label)
+
+    return box, value_label
 
 
 def build_empty_state(message):
@@ -198,15 +219,15 @@ class GalaxyHideout(QMainWindow):
         summary_layout.setSpacing(12)
 
         self.hud_profit_box, self.hud_profit_value = (
-            self._create_summary_box("TODAY'S PROFIT")
+            build_summary_box("TODAY'S PROFIT")
         )
 
         self.hud_trades_box, self.hud_trades_value = (
-            self._create_summary_box("OPEN TRADES")
+            build_summary_box("OPEN TRADES")
         )
 
         self.hud_stash_box, self.hud_stash_value = (
-            self._create_summary_box("STASH")
+            build_summary_box("STASH")
         )
 
         summary_layout.addWidget(self.hud_profit_box)
@@ -264,25 +285,6 @@ class GalaxyHideout(QMainWindow):
         layout.addLayout(rate_layout)
 
         return hideout
-
-    def _create_summary_box(self, title):
-
-        box = QFrame()
-        box.setObjectName("summaryBox")
-
-        layout = QVBoxLayout(box)
-        layout.setContentsMargins(15, 12, 15, 12)
-
-        title_label = QLabel(title)
-        title_label.setObjectName("summaryTitle")
-
-        value_label = QLabel("")
-        value_label.setObjectName("summaryValue")
-
-        layout.addWidget(title_label)
-        layout.addWidget(value_label)
-
-        return box, value_label
 
     # =========================================================
     # STATE REFRESH
@@ -767,8 +769,18 @@ class OverlayPanel(QFrame):
         self._pages["TRADES"] = self.trades_page
         self.stack.addWidget(self.trades_page)
 
+        self.analytics_page = AnalyticsPage(trade_service)
+        self._pages["ANALYTICS"] = self.analytics_page
+        self.stack.addWidget(self.analytics_page)
+
+        self.settings_page = SettingsPage(trade_service, on_trade_changed)
+        self._pages["SETTINGS"] = self.settings_page
+        self.stack.addWidget(self.settings_page)
+
         for section in SIDEBAR_SECTIONS:
-            if section in ("FAUSTUS", "STASH", "TRADES"):
+            if section in (
+                "FAUSTUS", "STASH", "TRADES", "ANALYTICS", "SETTINGS"
+            ):
                 continue
 
             page = self._build_placeholder_page(section)
@@ -787,6 +799,8 @@ class OverlayPanel(QFrame):
         self.faustus_page.refresh()
         self.stash_page.refresh()
         self.trades_page.refresh()
+        self.analytics_page.refresh()
+        self.settings_page.refresh()
 
     def _handle_close(self):
         self._on_close()
@@ -1435,6 +1449,412 @@ class TradesPage(QWidget):
                 )
 
         self.rows_layout.addStretch()
+
+
+# =============================================================
+# ANALYTICS PAGE — deep statistics for the current Trading Day
+# =============================================================
+# Time-period selection and Trading Day history are structurally
+# present but only ever show "Today" / empty for now: without real
+# persistence (later build step), there is no previous Trading Day to
+# select or look back on yet. No fake data is shown in the meantime.
+# =============================================================
+
+class AnalyticsPage(QWidget):
+
+    def __init__(self, trade_service, parent=None):
+        super().__init__(parent)
+
+        self.trade_service = trade_service
+
+        outer_layout = QVBoxLayout(self)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setObjectName("tradesScroll")
+
+        content = QWidget()
+        self.content_layout = QVBoxLayout(content)
+        self.content_layout.setSpacing(20)
+
+        scroll_area.setWidget(content)
+        outer_layout.addWidget(scroll_area)
+
+        # ---------------------------------------------------------
+        # SUMMARY ROW
+        # ---------------------------------------------------------
+
+        summary_layout = QHBoxLayout()
+        summary_layout.setSpacing(12)
+
+        self.profit_box, self.profit_value = build_summary_box("PROFIT")
+        self.roi_box, self.roi_value = build_summary_box("ROI")
+        self.volume_box, self.volume_value = (
+            build_summary_box("TRADING VOLUME")
+        )
+        self.tx_box, self.tx_value = build_summary_box("TRANSACTIONS")
+
+        for box in (
+            self.profit_box, self.roi_box, self.volume_box, self.tx_box
+        ):
+            summary_layout.addWidget(box)
+
+        self.content_layout.addLayout(summary_layout)
+
+        # ---------------------------------------------------------
+        # NEW TRADES VS CARRY-OVER SALES
+        # ---------------------------------------------------------
+
+        new_vs_carryover_title = QLabel("NEW TRADES VS CARRY-OVER SALES")
+        new_vs_carryover_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(new_vs_carryover_title)
+
+        self.new_vs_carryover_label = QLabel("")
+        self.new_vs_carryover_label.setObjectName("activity")
+        self.content_layout.addWidget(self.new_vs_carryover_label)
+
+        # ---------------------------------------------------------
+        # ITEM PERFORMANCE
+        # ---------------------------------------------------------
+
+        item_performance_title = QLabel("ITEM PERFORMANCE (TODAY)")
+        item_performance_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(item_performance_title)
+
+        self.item_performance_grid = QGridLayout()
+        self.item_performance_grid.setSpacing(10)
+        self.content_layout.addLayout(self.item_performance_grid)
+
+        # ---------------------------------------------------------
+        # GOLD / AVERAGES
+        # ---------------------------------------------------------
+
+        gold_averages_title = QLabel("GOLD & AVERAGES")
+        gold_averages_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(gold_averages_title)
+
+        self.gold_averages_label = QLabel("")
+        self.gold_averages_label.setObjectName("activity")
+        self.content_layout.addWidget(self.gold_averages_label)
+
+        # ---------------------------------------------------------
+        # TRADING DAY HISTORY
+        # ---------------------------------------------------------
+
+        history_title = QLabel("TRADING DAY HISTORY")
+        history_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(history_title)
+
+        self.history_label = build_empty_state(
+            "No previous Trading Days yet."
+        )
+        self.content_layout.addWidget(self.history_label)
+
+        self.content_layout.addStretch()
+
+    def refresh(self):
+        summary = self.trade_service.analytics_summary()
+
+        self.profit_value.setText(f"{summary['today_profit']:+,}c")
+        self.roi_value.setText(f"{summary['roi'] * 100:+.1f}%")
+        self.volume_value.setText(
+            f"{summary['trading_volume_chaos']:,}c"
+        )
+        self.tx_value.setText(str(summary["transaction_count_today"]))
+
+        self.new_vs_carryover_label.setText(
+            f"New Trade Sales:   {summary['new_trade_sales_count']}"
+            f"    ({summary['new_trade_sales_profit']:+,}c)\n"
+            f"Carry-over Sales:  {summary['carryover_sales_count']}"
+            f"    ({summary['carryover_sales_profit']:+,}c)"
+        )
+
+        clear_layout(self.item_performance_grid)
+
+        if not summary["item_performance"]:
+            self.item_performance_grid.addWidget(
+                build_empty_state("No sales yet today."),
+                0, 0, 1, 4
+            )
+        else:
+            headers = ["ITEM", "QTY SOLD", "REVENUE", "PROFIT"]
+
+            for column, text in enumerate(headers):
+                header_label = QLabel(text)
+                header_label.setObjectName("formLabel")
+                self.item_performance_grid.addWidget(
+                    header_label, 0, column
+                )
+
+            for row, entry in enumerate(
+                summary["item_performance"], start=1
+            ):
+                item_label = QLabel(entry["item_name"])
+                item_label.setObjectName("tradeTitle")
+
+                quantity_label = QLabel(str(entry["quantity_sold"]))
+                quantity_label.setObjectName("tradeInfo")
+
+                revenue_label = QLabel(f"{entry['revenue']:,}c")
+                revenue_label.setObjectName("tradeInfo")
+
+                profit_label = QLabel(f"{entry['profit']:+,}c")
+                profit_label.setObjectName("tradeInfo")
+
+                self.item_performance_grid.addWidget(item_label, row, 0)
+                self.item_performance_grid.addWidget(
+                    quantity_label, row, 1
+                )
+                self.item_performance_grid.addWidget(
+                    revenue_label, row, 2
+                )
+                self.item_performance_grid.addWidget(
+                    profit_label, row, 3
+                )
+
+        self.gold_averages_label.setText(
+            f"Gold spent today:      {summary['gold_spent_today']:,}\n"
+            f"Gold received today:   {summary['gold_received_today']:,}\n"
+            f"Completed trades today: "
+            f"{summary['completed_trades_today']}\n"
+            f"Average profit/trade:  "
+            f"{summary['average_profit_per_trade']:+,.0f}c\n"
+            f"Total realized profit (lifetime): "
+            f"{summary['total_realized_profit']:+,}c"
+        )
+
+
+# =============================================================
+# SETTINGS PAGE
+# =============================================================
+# General and Rates are real and functional. Assets/Cache Management
+# and Appearance are honest placeholders: there is no asset/cache
+# system yet (a later build step), and styling is deferred by Hugo's
+# own call until the app is functionally complete — showing fake
+# controls for either would be dishonest UI.
+# =============================================================
+
+class SettingsPage(QWidget):
+
+    def __init__(self, trade_service, on_settings_changed, parent=None):
+        super().__init__(parent)
+
+        self.trade_service = trade_service
+        self.on_settings_changed = on_settings_changed
+
+        outer_layout = QVBoxLayout(self)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setObjectName("tradesScroll")
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setSpacing(20)
+
+        content_layout.addWidget(self._build_general_section())
+        content_layout.addWidget(self._build_rates_section())
+        content_layout.addWidget(self._build_assets_section())
+        content_layout.addWidget(self._build_appearance_section())
+        content_layout.addStretch()
+
+        scroll_area.setWidget(content)
+        outer_layout.addWidget(scroll_area)
+
+    # -----------------------------------------------------
+    # GENERAL
+    # -----------------------------------------------------
+
+    def _build_general_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("GENERAL")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        form = QFormLayout()
+        form.setSpacing(10)
+
+        self.volume_input = QSpinBox()
+        self.volume_input.setRange(0, 100)
+        self.volume_input.setValue(self.trade_service.sound_master_volume)
+        self.volume_input.valueChanged.connect(
+            self.trade_service.set_sound_master_volume
+        )
+        form.addRow("Master volume", self.volume_input)
+
+        self.tink_checkbox = QCheckBox("Enable TINK (profit sound)")
+        self.tink_checkbox.setChecked(
+            self.trade_service.sound_tink_enabled
+        )
+        self.tink_checkbox.toggled.connect(
+            self.trade_service.set_sound_tink_enabled
+        )
+        form.addRow("", self.tink_checkbox)
+
+        self.warnings_checkbox = QCheckBox("Enable warning sound")
+        self.warnings_checkbox.setChecked(
+            self.trade_service.sound_warnings_enabled
+        )
+        self.warnings_checkbox.toggled.connect(
+            self.trade_service.set_sound_warnings_enabled
+        )
+        form.addRow("", self.warnings_checkbox)
+
+        layout.addLayout(form)
+
+        note = QLabel(
+            "Sound playback isn't implemented yet — these "
+            "preferences are saved for when it is."
+        )
+        note.setObjectName("tradeInfo")
+        layout.addWidget(note)
+
+        return section
+
+    # -----------------------------------------------------
+    # RATES
+    # -----------------------------------------------------
+
+    def _build_rates_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("RATES")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        self.divine_current_label = QLabel("")
+        self.divine_current_label.setObjectName("tradeInfo")
+        layout.addWidget(self.divine_current_label)
+
+        divine_row = QHBoxLayout()
+
+        self.divine_rate_input = QSpinBox()
+        self.divine_rate_input.setRange(1, 10_000_000)
+
+        update_divine_button = QPushButton("UPDATE")
+        update_divine_button.setObjectName("secondaryButton")
+        update_divine_button.clicked.connect(self._update_divine_rate)
+
+        divine_row.addWidget(QLabel("1 Divine ="))
+        divine_row.addWidget(self.divine_rate_input)
+        divine_row.addWidget(QLabel("Chaos"))
+        divine_row.addWidget(update_divine_button)
+
+        layout.addLayout(divine_row)
+
+        self.gold_current_label = QLabel("")
+        self.gold_current_label.setObjectName("tradeInfo")
+        layout.addWidget(self.gold_current_label)
+
+        gold_row = QHBoxLayout()
+
+        self.gold_amount_input = QSpinBox()
+        self.gold_amount_input.setRange(1, 100_000_000)
+
+        self.gold_chaos_input = QSpinBox()
+        self.gold_chaos_input.setRange(1, 10_000_000)
+
+        update_gold_button = QPushButton("UPDATE")
+        update_gold_button.setObjectName("secondaryButton")
+        update_gold_button.clicked.connect(self._update_gold_rate)
+
+        gold_row.addWidget(self.gold_amount_input)
+        gold_row.addWidget(QLabel("Gold ="))
+        gold_row.addWidget(self.gold_chaos_input)
+        gold_row.addWidget(QLabel("Chaos"))
+        gold_row.addWidget(update_gold_button)
+
+        layout.addLayout(gold_row)
+
+        note = QLabel(
+            "Changing a rate does not affect past transactions — "
+            "each transaction keeps the rate that was active when "
+            "it was made."
+        )
+        note.setObjectName("tradeInfo")
+        layout.addWidget(note)
+
+        return section
+
+    def _update_divine_rate(self):
+        self.trade_service.set_divine_rate(self.divine_rate_input.value())
+        self.refresh()
+        self.on_settings_changed()
+
+    def _update_gold_rate(self):
+        self.trade_service.set_gold_rate(
+            self.gold_amount_input.value(),
+            self.gold_chaos_input.value()
+        )
+        self.refresh()
+        self.on_settings_changed()
+
+    # -----------------------------------------------------
+    # ASSETS / CACHE MANAGEMENT
+    # -----------------------------------------------------
+
+    def _build_assets_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("ASSETS / CACHE MANAGEMENT")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        layout.addWidget(
+            build_empty_state(
+                "Not built yet — the asset/cache system is a "
+                "later build step."
+            )
+        )
+
+        return section
+
+    # -----------------------------------------------------
+    # APPEARANCE
+    # -----------------------------------------------------
+
+    def _build_appearance_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("APPEARANCE")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        layout.addWidget(
+            build_empty_state(
+                "Styling is intentionally deferred until the app "
+                "is fully functional."
+            )
+        )
+
+        return section
+
+    # -----------------------------------------------------
+    # REFRESH
+    # -----------------------------------------------------
+
+    def refresh(self):
+        self.divine_current_label.setText(
+            f"Current: 1 Divine = {self.trade_service.divine_rate}c"
+        )
+        self.divine_rate_input.setValue(self.trade_service.divine_rate)
+
+        self.gold_current_label.setText(
+            f"Current: "
+            f"{self.trade_service.gold_rate_gold_amount:,} Gold = "
+            f"{self.trade_service.gold_rate_chaos_value}c"
+        )
+        self.gold_amount_input.setValue(
+            self.trade_service.gold_rate_gold_amount
+        )
+        self.gold_chaos_input.setValue(
+            self.trade_service.gold_rate_chaos_value
+        )
 
 
 # =============================================================
