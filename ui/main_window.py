@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QComboBox,
     QSpinBox,
+    QLineEdit,
+    QScrollArea,
 )
 from PySide6.QtCore import Qt
 
@@ -632,7 +634,25 @@ class GalaxyHideout(QMainWindow):
                 font-size: 13px;
             }
 
-            QComboBox, QSpinBox {
+            QPushButton#transactionRow {
+                color: #aaaac8;
+                background: transparent;
+                border: none;
+                text-align: left;
+                font-size: 13px;
+                font-family: monospace;
+            }
+
+            QPushButton#transactionRow:hover {
+                color: #eeeeff;
+            }
+
+            #tradesScroll {
+                background: transparent;
+                border: none;
+            }
+
+            QComboBox, QSpinBox, QLineEdit {
                 color: #eeeeff;
                 background: #181824;
                 border: 1px solid #303044;
@@ -742,8 +762,12 @@ class OverlayPanel(QFrame):
         self._pages["STASH"] = self.stash_page
         self.stack.addWidget(self.stash_page)
 
+        self.trades_page = TradesPage(trade_service)
+        self._pages["TRADES"] = self.trades_page
+        self.stack.addWidget(self.trades_page)
+
         for section in SIDEBAR_SECTIONS:
-            if section in ("FAUSTUS", "STASH"):
+            if section in ("FAUSTUS", "STASH", "TRADES"):
                 continue
 
             page = self._build_placeholder_page(section)
@@ -761,6 +785,7 @@ class OverlayPanel(QFrame):
     def refresh(self):
         self.faustus_page.refresh()
         self.stash_page.refresh()
+        self.trades_page.refresh()
 
     def _handle_close(self):
         self._on_close()
@@ -1273,6 +1298,142 @@ class StashPage(QWidget):
         self.grid.addWidget(total_item_label, row, 0)
         self.grid.addWidget(total_quantity_label, row, 1)
         self.grid.addWidget(total_cost_label, row, 2)
+
+
+# =============================================================
+# TRADES PAGE — complete historical BUY/SELL activity
+# =============================================================
+
+class TransactionRow(QFrame):
+
+    def __init__(self, transaction, parent=None):
+        super().__init__(parent)
+
+        self.setObjectName("tradeCard")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
+
+        self.toggle_button = QPushButton(self._summary_text(transaction))
+        self.toggle_button.setObjectName("transactionRow")
+        self.toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggle_button.clicked.connect(self._toggle)
+        layout.addWidget(self.toggle_button)
+
+        self.detail_label = QLabel(self._detail_text(transaction))
+        self.detail_label.setObjectName("tradeInfo")
+        self.detail_label.setVisible(False)
+        layout.addWidget(self.detail_label)
+
+    def _toggle(self):
+        self.detail_label.setVisible(not self.detail_label.isVisible())
+
+    @staticmethod
+    def _summary_text(transaction):
+        profit_part = (
+            f"  ({transaction['profit']:+,}c)"
+            if transaction["profit"] is not None
+            else ""
+        )
+
+        return (
+            f"{transaction['type']:<5} "
+            f"{transaction['item']} x{transaction['quantity']}    "
+            f"{transaction['total_chaos']:,}c{profit_part}    "
+            f"{transaction['timestamp']}"
+        )
+
+    @staticmethod
+    def _detail_text(transaction):
+        lines = [f"Currency: {transaction['currency']}"]
+
+        if transaction["currency"] == "DIVINE":
+            lines.append(
+                f"Price: {transaction['entered_price']} Divine each "
+                f"({transaction['unit_price_chaos']:,}c each)"
+            )
+        else:
+            lines.append(
+                f"Price: {transaction['unit_price_chaos']:,}c each"
+            )
+
+        if transaction["type"] == "SELL":
+            lines.append(f"Cost basis: {transaction['cost_chaos']:,}c")
+            lines.append(f"Profit: {transaction['profit']:+,}c")
+            lines.append(f"Gold received: {transaction['gold']:,}")
+        else:
+            lines.append(f"Gold spent: {transaction['gold']:,}")
+
+        lines.append(f"Trade #{transaction['trade_id']}")
+
+        return "\n".join(lines)
+
+
+class TradesPage(QWidget):
+
+    def __init__(self, trade_service, parent=None):
+        super().__init__(parent)
+
+        self.trade_service = trade_service
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+
+        filters_layout = QHBoxLayout()
+
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search item...")
+        self.search_input.textChanged.connect(self.refresh)
+
+        self.type_filter = QComboBox()
+        self.type_filter.addItems(["ALL", "BUY", "SELL"])
+        self.type_filter.currentTextChanged.connect(self.refresh)
+
+        filters_layout.addWidget(self.search_input)
+        filters_layout.addWidget(self.type_filter)
+
+        layout.addLayout(filters_layout)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setObjectName("tradesScroll")
+
+        self.rows_container = QWidget()
+        self.rows_layout = QVBoxLayout(self.rows_container)
+        self.rows_layout.setSpacing(8)
+
+        scroll_area.setWidget(self.rows_container)
+
+        layout.addWidget(scroll_area)
+
+    def refresh(self):
+        clear_layout(self.rows_layout)
+
+        query = self.search_input.text().strip().lower()
+        type_filter = self.type_filter.currentText()
+
+        transactions = [
+            transaction
+            for transaction in self.trade_service.all_transactions()
+            if (
+                type_filter == "ALL"
+                or transaction["type"] == type_filter
+            )
+            and query in transaction["item"].lower()
+        ]
+
+        if not transactions:
+            self.rows_layout.addWidget(
+                build_empty_state("No transactions match.")
+            )
+        else:
+            for transaction in transactions:
+                self.rows_layout.addWidget(
+                    TransactionRow(transaction)
+                )
+
+        self.rows_layout.addStretch()
 
 
 def main():

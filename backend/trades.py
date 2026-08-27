@@ -217,29 +217,63 @@ class TradeService:
     def today_profit(self):
         return sum(trade.realized_profit for trade in self.trades)
 
-    def recent_activity(self, limit=5):
-        activity = []
+    def all_transactions(self):
+        """Complete historical BUY/SELL activity, newest first — the
+        Trades overlay's data source. Distinct from open_trades(): this
+        includes every transaction, not just currently-open positions."""
+
+        transactions = []
 
         for trade in self.trades:
-            activity.append({
+            transactions.append({
                 "type": "BUY",
+                "trade_id": trade.id,
                 "item": trade.item_name,
                 "quantity": trade.quantity_bought,
+                "currency": trade.currency,
+                "entered_price": trade.entered_price,
+                "unit_price_chaos": trade.unit_price_chaos,
                 "total_chaos": trade.invested_chaos,
+                "cost_chaos": None,
                 "profit": None,
+                "gold": trade.gold_spent,
                 "timestamp": trade.opened_at
             })
 
             for sell in trade.sells:
-                activity.append({
+                transactions.append({
                     "type": "SELL",
+                    "trade_id": trade.id,
                     "item": trade.item_name,
                     "quantity": sell["quantity"],
+                    "currency": sell["currency"],
+                    "entered_price": sell["entered_price"],
+                    "unit_price_chaos": sell["unit_price_chaos"],
                     "total_chaos": sell["total_chaos"],
+                    "cost_chaos": sell["cost_chaos"],
                     "profit": sell["profit"],
+                    "gold": sell["gold_received"],
                     "timestamp": sell["timestamp"]
                 })
 
-        activity.sort(key=lambda entry: entry["timestamp"], reverse=True)
+        transactions.sort(
+            key=lambda transaction: transaction["timestamp"],
+            reverse=True
+        )
 
-        return activity[:limit]
+        return transactions
+
+    def recent_activity(self, limit=5):
+        activity = []
+
+        for transaction in self.all_transactions()[:limit]:
+            activity.append({
+                "type": transaction["type"],
+                "item": transaction["item"],
+                "quantity": transaction["quantity"],
+                "total_chaos": transaction["total_chaos"],
+                "profit": transaction["profit"],
+                "timestamp": transaction["timestamp"]
+            })
+
+        return activity
