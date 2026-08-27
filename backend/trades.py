@@ -105,6 +105,62 @@ class TradeService:
         return trade
 
     # ---------------------------------------------------------------
+    # SELL / CLOSE TRADE
+    # ---------------------------------------------------------------
+
+    def get_trade(self, trade_id):
+        for trade in self.trades:
+            if trade.id == trade_id:
+                return trade
+
+        return None
+
+    def sell_from_trade(
+        self,
+        trade_id,
+        quantity,
+        currency,
+        entered_price,
+        gold_received=0
+    ):
+        trade = self.get_trade(trade_id)
+
+        if trade is None:
+            raise ValueError(f"Trade {trade_id} not found.")
+
+        if quantity <= 0 or quantity > trade.remaining:
+            raise ValueError(
+                f"Cannot sell {quantity}; "
+                f"only {trade.remaining} remaining on this trade."
+            )
+
+        if currency == "DIVINE":
+            unit_price_chaos = self.divine_to_chaos(entered_price)
+        else:
+            unit_price_chaos = entered_price
+
+        total_chaos = unit_price_chaos * quantity
+        cost_chaos = trade.unit_price_chaos * quantity
+        profit = total_chaos - cost_chaos
+
+        sell_record = {
+            "quantity": quantity,
+            "currency": currency,
+            "entered_price": entered_price,
+            "unit_price_chaos": unit_price_chaos,
+            "total_chaos": total_chaos,
+            "cost_chaos": cost_chaos,
+            "profit": profit,
+            "gold_received": gold_received,
+            "timestamp": _now()
+        }
+
+        trade.quantity_sold += quantity
+        trade.sells.append(sell_record)
+
+        return sell_record
+
+    # ---------------------------------------------------------------
     # QUERIES
     # ---------------------------------------------------------------
 

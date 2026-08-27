@@ -55,7 +55,7 @@ def clear_layout(layout):
             widget.deleteLater()
 
 
-def build_trade_card(trade, interactive):
+def build_trade_card(trade, interactive, on_sell=None):
 
     card = QFrame()
     card.setObjectName("tradeCard")
@@ -99,8 +99,7 @@ def build_trade_card(trade, interactive):
     if interactive:
         sell_button = QPushButton("SELL")
         sell_button.setObjectName("fauxTab")
-        sell_button.setEnabled(False)
-        sell_button.setToolTip("Coming in the next build step.")
+        sell_button.clicked.connect(lambda: on_sell(trade))
         layout.addWidget(sell_button)
 
     return card
@@ -814,8 +813,8 @@ class FaustusPage(QWidget):
         self.tab_group.addButton(self.buy_tab)
         self.tab_group.addButton(self.sell_tab)
 
-        self.buy_tab.clicked.connect(lambda: self.tab_stack.setCurrentIndex(0))
-        self.sell_tab.clicked.connect(lambda: self.tab_stack.setCurrentIndex(1))
+        self.buy_tab.clicked.connect(self._show_buy_tab)
+        self.sell_tab.clicked.connect(self._show_sell_tab)
 
         tab_layout.addWidget(self.buy_tab)
         tab_layout.addWidget(self.sell_tab)
@@ -823,32 +822,24 @@ class FaustusPage(QWidget):
 
         layout.addLayout(tab_layout)
 
-        self.tab_stack = QStackedWidget()
-        layout.addWidget(self.tab_stack)
+        # Workflow area: switches between BUY and SELL/CLOSE TRADE
+        # sub-steps. The open trades grid below is shared by both
+        # tabs (Faustus shows all open trades regardless of which
+        # workflow is active).
+        self.top_stack = QStackedWidget()
+        layout.addWidget(self.top_stack)
 
-        self.tab_stack.addWidget(self._build_buy_tab())
-        self.tab_stack.addWidget(
+        self.top_stack.addWidget(self._build_buy_form())      # 0
+        self.top_stack.addWidget(self._build_buy_confirm())   # 1
+        self.top_stack.addWidget(
             build_empty_state(
-                "Open a trade in BUY, then close it from its card "
-                "— coming in the next build step."
+                "Pick an open trade below and click SELL to close it."
             )
-        )
+        )                                                     # 2
+        self.top_stack.addWidget(self._build_close_form())    # 3
+        self.top_stack.addWidget(self._build_close_confirm()) # 4
 
-    # -----------------------------------------------------
-    # BUY TAB
-    # -----------------------------------------------------
-
-    def _build_buy_tab(self):
-
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setSpacing(15)
-
-        self.buy_stack = QStackedWidget()
-        layout.addWidget(self.buy_stack)
-
-        self.buy_stack.addWidget(self._build_buy_form())
-        self.buy_stack.addWidget(self._build_buy_confirm())
+        self._active_trade = None
 
         trades_title = QLabel("OPEN TRADES")
         trades_title.setObjectName("sectionTitle")
@@ -860,7 +851,16 @@ class FaustusPage(QWidget):
 
         layout.addStretch()
 
-        return page
+    def _show_buy_tab(self):
+        self.top_stack.setCurrentIndex(0)
+
+    def _show_sell_tab(self):
+        self._active_trade = None
+        self.top_stack.setCurrentIndex(2)
+
+    # -----------------------------------------------------
+    # BUY WORKFLOW
+    # -----------------------------------------------------
 
     def _build_buy_form(self):
 
@@ -969,10 +969,10 @@ class FaustusPage(QWidget):
         ]
 
         self.confirm_summary.setText("\n".join(lines))
-        self.buy_stack.setCurrentIndex(1)
+        self.top_stack.setCurrentIndex(1)
 
     def _cancel_buy(self):
-        self.buy_stack.setCurrentIndex(0)
+        self.top_stack.setCurrentIndex(0)
 
     def _confirm_buy(self):
 
@@ -991,7 +991,7 @@ class FaustusPage(QWidget):
         )
 
         self._reset_buy_form()
-        self.buy_stack.setCurrentIndex(0)
+        self.top_stack.setCurrentIndex(0)
 
         self.on_trade_changed()
 
@@ -1001,6 +1001,166 @@ class FaustusPage(QWidget):
         self.currency_input.setCurrentIndex(0)
         self.price_input.setValue(1)
         self.gold_input.setValue(0)
+
+    # -----------------------------------------------------
+    # SELL / CLOSE TRADE WORKFLOW
+    # -----------------------------------------------------
+
+    def _build_close_form(self):
+
+        form_page = QWidget()
+        outer = QVBoxLayout(form_page)
+
+        self.close_trade_title = QLabel("")
+        self.close_trade_title.setObjectName("sectionTitle")
+        outer.addWidget(self.close_trade_title)
+
+        form = QFormLayout()
+        form.setSpacing(10)
+
+        self.sell_quantity_input = QSpinBox()
+        self.sell_quantity_input.setRange(1, 1)
+
+        self.sell_currency_input = QComboBox()
+        self.sell_currency_input.addItems(["CHAOS", "DIVINE"])
+
+        self.sell_price_input = QSpinBox()
+        self.sell_price_input.setRange(1, 10_000_000)
+        self.sell_price_input.setValue(1)
+
+        self.sell_gold_input = QSpinBox()
+        self.sell_gold_input.setRange(0, 100_000_000)
+        self.sell_gold_input.setValue(0)
+
+        form.addRow("Quantity", self.sell_quantity_input)
+        form.addRow("Currency", self.sell_currency_input)
+        form.addRow("Price per item", self.sell_price_input)
+        form.addRow("Gold received", self.sell_gold_input)
+
+        outer.addLayout(form)
+
+        review_button = QPushButton("REVIEW SELL")
+        review_button.setObjectName("primaryButton")
+        review_button.clicked.connect(self._show_sell_confirm)
+
+        outer.addWidget(review_button)
+
+        return form_page
+
+    def _build_close_confirm(self):
+
+        confirm_page = QWidget()
+        layout = QVBoxLayout(confirm_page)
+        layout.setSpacing(15)
+
+        self.close_confirm_summary = QLabel("")
+        self.close_confirm_summary.setObjectName("confirmSummary")
+        layout.addWidget(self.close_confirm_summary)
+
+        button_row = QHBoxLayout()
+
+        cancel_button = QPushButton("CANCEL")
+        cancel_button.setObjectName("secondaryButton")
+        cancel_button.clicked.connect(self._cancel_sell)
+
+        confirm_button = QPushButton("CONFIRM")
+        confirm_button.setObjectName("primaryButton")
+        confirm_button.clicked.connect(self._confirm_sell)
+
+        button_row.addWidget(cancel_button)
+        button_row.addWidget(confirm_button)
+
+        layout.addLayout(button_row)
+        layout.addStretch()
+
+        return confirm_page
+
+    def _start_close_trade(self, trade):
+        self._active_trade = trade
+
+        self.close_trade_title.setText(
+            f"Selling: {trade.item_name} "
+            f"(remaining {trade.remaining})"
+        )
+
+        self.sell_quantity_input.setRange(1, trade.remaining)
+        self.sell_quantity_input.setValue(trade.remaining)
+        self.sell_currency_input.setCurrentIndex(0)
+        self.sell_price_input.setValue(1)
+        self.sell_gold_input.setValue(0)
+
+        self.sell_tab.setChecked(True)
+        self.top_stack.setCurrentIndex(3)
+
+    def _show_sell_confirm(self):
+
+        trade = self._active_trade
+
+        if trade is None:
+            return
+
+        quantity = self.sell_quantity_input.value()
+        currency = self.sell_currency_input.currentText()
+        price = self.sell_price_input.value()
+        gold = self.sell_gold_input.value()
+
+        if currency == "DIVINE":
+            unit_chaos = self.trade_service.divine_to_chaos(price)
+            price_line = (
+                f"Price: {price} Divine each "
+                f"({unit_chaos:,}c each)"
+            )
+        else:
+            unit_chaos = price
+            price_line = f"Price: {price:,}c each"
+
+        total_chaos = unit_chaos * quantity
+        cost_chaos = trade.unit_price_chaos * quantity
+        profit = total_chaos - cost_chaos
+
+        lines = [
+            "Transaction information",
+            "-----------------------",
+            f"Item: {trade.item_name}",
+            "Type: SELL",
+            f"Quantity: {quantity}",
+            price_line,
+            f"Total: {total_chaos:,}c",
+            f"Cost basis: {cost_chaos:,}c",
+            f"Profit: {profit:+,}c",
+            f"Gold received: {gold:,}",
+        ]
+
+        self.close_confirm_summary.setText("\n".join(lines))
+        self.top_stack.setCurrentIndex(4)
+
+    def _cancel_sell(self):
+        self.top_stack.setCurrentIndex(3)
+
+    def _confirm_sell(self):
+
+        trade = self._active_trade
+
+        if trade is None:
+            return
+
+        quantity = self.sell_quantity_input.value()
+        currency = self.sell_currency_input.currentText()
+        price = self.sell_price_input.value()
+        gold = self.sell_gold_input.value()
+
+        self.trade_service.sell_from_trade(
+            trade_id=trade.id,
+            quantity=quantity,
+            currency=currency,
+            entered_price=price,
+            gold_received=gold
+        )
+
+        self._active_trade = None
+        self.top_stack.setCurrentIndex(2)
+
+        self.on_trade_changed()
 
     # -----------------------------------------------------
     # REFRESH
@@ -1021,7 +1181,11 @@ class FaustusPage(QWidget):
             return
 
         for index, trade in enumerate(open_trades):
-            card = build_trade_card(trade, interactive=True)
+            card = build_trade_card(
+                trade,
+                interactive=True,
+                on_sell=self._start_close_trade
+            )
 
             row = index // 3
             column = index % 3
