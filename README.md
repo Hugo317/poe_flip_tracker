@@ -38,6 +38,24 @@ alembic upgrade head
 Run this again after pulling any change that adds a new
 `alembic/versions/*.py` migration file.
 
+## Asset catalog & image cache
+
+The tradeable-item picker is populated live from
+[poe.ninja](https://poe.ninja)'s public economy API (currently the
+"Standard" league — see `backend/assets_service.py` and
+`backend/providers/poe_ninja.py`). On launch, the app refreshes the
+catalog and downloads any missing item icons to an OS-appropriate cache
+directory, separate from the database:
+
+- macOS: `~/Library/Caches/DivineFlipper/images/`
+- Linux: `~/.cache/DivineFlipper/images/`
+- Windows: `%LOCALAPPDATA%\DivineFlipper\images\`
+
+This is a plain download cache (not committed, not backed up) — safe to
+delete; it just gets rebuilt on the next launch with internet access.
+If poe.ninja is unreachable, the app falls back to whatever was cached
+from the last successful refresh and continues working offline.
+
 ## Run
 
 ```bash

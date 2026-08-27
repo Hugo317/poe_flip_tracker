@@ -200,7 +200,8 @@ class TradeService:
         quantity,
         currency,
         entered_price,
-        gold_spent=0
+        gold_spent=0,
+        asset_id=None
     ):
         if currency == "DIVINE":
             unit_price_chaos = self.divine_to_chaos(entered_price)
@@ -210,6 +211,7 @@ class TradeService:
         trade = Trade(
             league_id=self.league.id,
             trading_day_id=self.trading_day.id,
+            asset_id=asset_id,
             item_name=item_name,
             currency=currency,
             entered_price=entered_price,
