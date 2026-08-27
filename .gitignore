@@ -6,6 +6,12 @@ __pycache__/
 *.backup
 data/
 
+# PyInstaller build output — regenerated from divineflipper.spec
+build/
+dist/
+
+.pytest_cache/
+
 # Personal sound files — license status unconfirmed (sourced from a
 # SoundCloud account, not verified as reusable/redistributable), so
 # these stay local-only. The committed *.wav placeholders in

@@ -9,3 +9,11 @@ PySide6==6.10.1
 # Persistence (data/divineflipper.db, migrated with Alembic)
 SQLAlchemy==2.0.52
 alembic==1.19.1
+
+# Testing (directive 42 — accounting must be testable independently
+# of the GUI; see tests/)
+pytest==9.1.1
+
+# Packaging (directive 41 — portable desktop app; see divineflipper.spec
+# and .github/workflows/build.yml). Not needed to just run the app.
+pyinstaller==6.22.2

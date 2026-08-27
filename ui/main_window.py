@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -19,12 +20,18 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QDialog,
     QCheckBox,
+    QCompleter,
+    QAbstractSpinBox,
+    QMessageBox,
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFontDatabase, QIcon, QPixmap
 
-from backend.trades import TradeService
+from backend.trades import TradeService, TradeHasSalesError
 from backend.assets_service import AssetService
+from backend.gold_fees import gold_cost_for, is_gold_exchange_eligible
+from backend.backup import BackupManager
+from backend.migrations import run_migrations
 from ui.sound_player import SoundPlayer
 
 
@@ -36,9 +43,42 @@ SIDEBAR_SECTIONS = [
     "SETTINGS",
 ]
 
+SIDEBAR_ICONS = {
+    "FAUSTUS": "💰",
+    "STASH": "📦",
+    "TRADES": "🤝",
+    "ANALYTICS": "📈",
+    "SETTINGS": "🛠",
+}
+
+SIDEBAR_WIDTH_EXPANDED = 180
+SIDEBAR_WIDTH_COLLAPSED = 64
+
 # Overlay covers this fraction of the content area, centered,
 # leaving a Hideout border visible around it.
 OVERLAY_SIZE_RATIO = 0.90
+
+# Display font for headings only (directive Q48) — body text stays on
+# the system font for readability. Cinzel is SIL Open Font License
+# (assets/fonts/OFL.txt), safe to bundle; falls back to a generic
+# serif if the font file is ever missing rather than failing to start.
+FONT_ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+DISPLAY_FONT_FALLBACK = "Georgia, 'Times New Roman', serif"
+
+
+def load_display_font():
+    font_path = FONT_ASSETS_DIR / "Cinzel-Variable.ttf"
+
+    if not font_path.exists():
+        return DISPLAY_FONT_FALLBACK
+
+    font_id = QFontDatabase.addApplicationFont(str(font_path))
+    families = QFontDatabase.applicationFontFamilies(font_id)
+
+    if not families:
+        return DISPLAY_FONT_FALLBACK
+
+    return f"'{families[0]}', {DISPLAY_FONT_FALLBACK}"
 
 
 def clear_layout(layout):
@@ -101,6 +141,187 @@ def build_trade_card(trade, interactive, on_sell=None):
     return card
 
 
+def build_transaction_card(transaction, asset_service):
+
+    card = QFrame()
+    card.setObjectName("tradeCard")
+    card.setFixedWidth(190)
+
+    layout = QVBoxLayout(card)
+    layout.setContentsMargins(10, 8, 10, 8)
+    layout.setSpacing(6)
+
+    header_row = QHBoxLayout()
+
+    type_label = QLabel(transaction["type"])
+    type_label.setObjectName("tradeTitle")
+    header_row.addWidget(type_label)
+    header_row.addStretch()
+
+    currency_asset_name = (
+        "Divine Orb" if transaction["currency"] == "DIVINE" else "Chaos Orb"
+    )
+    currency_asset = asset_service.get_asset_by_name(currency_asset_name)
+
+    if currency_asset is not None:
+        icon_path = asset_service.icon_file_path(currency_asset)
+
+        if icon_path is not None:
+            currency_icon = QLabel()
+            currency_icon.setPixmap(
+                QPixmap(str(icon_path)).scaled(
+                    20, 20,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            header_row.addWidget(currency_icon)
+
+    layout.addLayout(header_row)
+
+    divider = QFrame()
+    divider.setFrameShape(QFrame.Shape.HLine)
+    divider.setObjectName("cardDivider")
+    layout.addWidget(divider)
+
+    item_row = QHBoxLayout()
+
+    item_asset = asset_service.get_asset_by_name(transaction["item"])
+
+    if item_asset is not None:
+        icon_path = asset_service.icon_file_path(item_asset)
+
+        if icon_path is not None:
+            item_icon = QLabel()
+            item_icon.setPixmap(
+                QPixmap(str(icon_path)).scaled(
+                    20, 20,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            item_row.addWidget(item_icon)
+
+    item_name = QLabel(transaction["item"])
+    item_name.setObjectName("tradeInfo")
+    item_name.setWordWrap(True)
+    item_row.addWidget(item_name)
+    item_row.addStretch()
+
+    layout.addLayout(item_row)
+
+    if transaction["currency"] == "DIVINE":
+        price_line = QLabel(
+            f"{transaction['quantity']} @ {transaction['entered_price']} Divine each"
+        )
+    else:
+        price_line = QLabel(
+            f"{transaction['quantity']} @ {transaction['entered_price']:,}c each"
+        )
+
+    price_line.setObjectName("tradeInfo")
+    layout.addWidget(price_line)
+
+    total_text = f"Total: {transaction['total_chaos']:,}c"
+    if transaction["profit"] is not None:
+        total_text += f"  ({transaction['profit']:+,}c)"
+
+    total_line = QLabel(total_text)
+    total_line.setObjectName("tradeInfo")
+    layout.addWidget(total_line)
+
+    return card
+
+
+def populate_confirm_card(layout, asset_service, item_name, type_label, price_line, stat_rows):
+    clear_layout(layout)
+
+    header_row = QHBoxLayout()
+
+    icon_path = None
+    asset = asset_service.get_asset_by_name(item_name)
+    if asset is not None:
+        icon_path = asset_service.icon_file_path(asset)
+
+    if icon_path is not None:
+        icon_label = QLabel()
+        icon_label.setPixmap(
+            QPixmap(str(icon_path)).scaled(
+                24, 24,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+        )
+        header_row.addWidget(icon_label)
+
+    item_label = QLabel(item_name)
+    item_label.setObjectName("tradeTitle")
+    header_row.addWidget(item_label)
+    header_row.addStretch()
+
+    type_badge = QLabel(type_label)
+    type_badge.setObjectName("tradeTitle")
+    header_row.addWidget(type_badge)
+
+    layout.addLayout(header_row)
+
+    divider = QFrame()
+    divider.setFrameShape(QFrame.Shape.HLine)
+    divider.setObjectName("cardDivider")
+    layout.addWidget(divider)
+
+    price_label = QLabel(price_line)
+    price_label.setObjectName("tradeInfo")
+    layout.addWidget(price_label)
+
+    layout.addSpacing(6)
+
+    for label_text, value_text in stat_rows:
+        row = QHBoxLayout()
+
+        label = QLabel(label_text)
+        label.setObjectName("formLabel")
+        row.addWidget(label)
+        row.addStretch()
+
+        value = QLabel(value_text)
+        value.setObjectName("tradeInfo")
+        row.addWidget(value)
+
+        layout.addLayout(row)
+
+
+def build_history_day_card(trading_day, on_click):
+
+    card = QFrame()
+    card.setObjectName("tradeCard")
+
+    layout = QVBoxLayout(card)
+    layout.setContentsMargins(10, 8, 10, 8)
+    layout.setSpacing(6)
+
+    date_label = QLabel(trading_day.started_at.split(" ")[0])
+    date_label.setObjectName("tradeTitle")
+    layout.addWidget(date_label)
+
+    profit = trading_day.snapshot_realized_profit or 0
+    profit_label = QLabel(f"Profit: {profit:+,}c")
+    profit_label.setObjectName("tradeInfo")
+    layout.addWidget(profit_label)
+
+    roi_percent = (trading_day.snapshot_roi or 0) * 100
+    roi_label = QLabel(f"% Return: {roi_percent:+.1f}%")
+    roi_label.setObjectName("tradeInfo")
+    layout.addWidget(roi_label)
+
+    view_button = QPushButton("VIEW")
+    view_button.setObjectName("fauxTab")
+    view_button.clicked.connect(lambda: on_click(trading_day))
+    layout.addWidget(view_button)
+
+    return card
+
+
 def build_summary_box(title):
 
     box = QFrame()
@@ -128,18 +349,185 @@ def build_empty_state(message):
     return label
 
 
+def _is_market_league(name):
+    # SSF (Solo Self-Found) has no trade with other players, so it
+    # has no market/pricing at all — Faustus can't function there.
+    # poe.ninja's own economy-leagues list already excludes these,
+    # this is just a defensive second layer.
+    lowered = name.lower()
+    return "ssf" not in lowered and "solo self-found" not in lowered
+
+
+def available_league_names(trade_service, asset_service):
+    """Live leagues from poe.ninja first (in its own order — current
+    temp league, Standard, Hardcore, etc.), then any locally-known
+    league not in that list (e.g. a league that has since ended but
+    still has local trade history). SSF leagues are excluded — no
+    market means no Faustus."""
+
+    live = asset_service.available_leagues()
+    local = trade_service.local_league_names()
+
+    merged = list(live)
+    for name in local:
+        if name not in merged:
+            merged.append(name)
+
+    result = [name for name in merged if _is_market_league(name)]
+
+    return result or [name for name in local if _is_market_league(name)]
+
+
+class QuantityPriceTotalLinker:
+    """Keeps Quantity / Price-per-item / Total mutually in sync in a
+    BUY or SELL form (Hugo's request). Normally Total is just a live
+    readout of quantity x price; editing Total directly instead
+    back-solves Price, with Quantity always treated as the fixed
+    anchor either way."""
+
+    def __init__(self, quantity_input, price_input, total_input):
+        self.quantity_input = quantity_input
+        self.price_input = price_input
+        self.total_input = total_input
+        self._updating = False
+
+        quantity_input.valueChanged.connect(self._recompute_total)
+        price_input.valueChanged.connect(self._recompute_total)
+        total_input.valueChanged.connect(self._recompute_price)
+
+        self._recompute_total()
+
+    def _recompute_total(self):
+        if self._updating:
+            return
+
+        self._updating = True
+        self.total_input.setValue(
+            self.quantity_input.value() * self.price_input.value()
+        )
+        self._updating = False
+
+    def _recompute_price(self):
+        if self._updating:
+            return
+
+        self._updating = True
+
+        quantity = self.quantity_input.value()
+
+        if quantity > 0:
+            self.price_input.setValue(
+                round(self.total_input.value() / quantity)
+            )
+
+        self._updating = False
+
+    def reset(self, quantity=1, price=1):
+        self._updating = True
+        self.quantity_input.setValue(quantity)
+        self.price_input.setValue(price)
+        self.total_input.setValue(quantity * price)
+        self._updating = False
+
+
+class GoldEstimator:
+    """Auto-calculates Gold spent/received (Hugo's request — Gold is
+    never manually typed). Every Currency Exchange trade charges Gold
+    twice — once for the item leg, once for the currency leg — each
+    using that item's own Base Gold Fee (poedb.tw) times the quantity
+    of it changing hands. There's no chaos-equivalent conversion
+    involved; each leg is its own flat per-unit fee."""
+
+    def __init__(
+        self,
+        quantity_input,
+        total_input,
+        chaos_button,
+        divine_button,
+        gold_display,
+        item_name_getter,
+        item_change_signal=None
+    ):
+        self.quantity_input = quantity_input
+        self.total_input = total_input
+        self.chaos_button = chaos_button
+        self.divine_button = divine_button
+        self.gold_display = gold_display
+        self.item_name_getter = item_name_getter
+
+        quantity_input.valueChanged.connect(self.recompute)
+        total_input.valueChanged.connect(self.recompute)
+        chaos_button.toggled.connect(self.recompute)
+        divine_button.toggled.connect(self.recompute)
+
+        if item_change_signal is not None:
+            item_change_signal.connect(self.recompute)
+
+        self.recompute()
+
+    def current_gold_estimate(self):
+        item_name = self.item_name_getter()
+        quantity = self.quantity_input.value()
+        total = self.total_input.value()
+
+        currency_name = (
+            "Divine Orb" if self.divine_button.isChecked() else "Chaos Orb"
+        )
+
+        item_leg = gold_cost_for(item_name, quantity)
+        currency_leg = gold_cost_for(currency_name, total)
+
+        if item_leg is None or currency_leg is None:
+            return None
+
+        return item_leg + currency_leg
+
+    def recompute(self):
+        gold = self.current_gold_estimate()
+
+        if gold is None:
+            self.gold_display.setText("N/A")
+        else:
+            self.gold_display.setText(f"{gold:,}")
+
+
+class HoverSidebar(QFrame):
+    """Expands on mouse-over, collapses back to icons-only when the
+    mouse leaves (Hugo's request — no manual toggle button)."""
+
+    def __init__(self, on_enter, on_leave, parent=None):
+        super().__init__(parent)
+        self._on_enter = on_enter
+        self._on_leave = on_leave
+
+    def enterEvent(self, event):
+        self._on_enter()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._on_leave()
+        super().leaveEvent(event)
+
+
 class GalaxyHideout(QMainWindow):
 
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Galaxy Hideout")
+        self.setWindowTitle("DivineFlipper")
         self.resize(1400, 850)
-        self.setMinimumSize(1000, 650)
+        self.setMinimumSize(1400, 850)
+
+        self.display_font = load_display_font()
 
         self.trade_service = TradeService()
         self.asset_service = AssetService(session=self.trade_service.session)
         self.sound_player = SoundPlayer(self.trade_service)
+        self.backup_manager = BackupManager()
+
+        # Directive Q4/Q5: one automatic backup per day, no user
+        # action required.
+        self.backup_manager.run_daily_backup_if_needed()
 
         # Catalog refresh at startup (directive Q34) — also gives us
         # the live Divine rate for free, or None if unreachable, in
@@ -160,9 +548,19 @@ class GalaxyHideout(QMainWindow):
 
         central = QWidget()
         self.setCentralWidget(central)
+        self._central = central
 
+        # The sidebar is NOT part of this layout — it floats on top as
+        # an overlay (Hugo's request), positioned manually in
+        # _position_sidebar(). The layout only reserves a permanent
+        # right-hand gutter the width of the collapsed sidebar, so
+        # content never sits underneath the always-visible icons, and
+        # expanding the sidebar never reflows/resizes the rest of the
+        # app.
         main_layout = QHBoxLayout(central)
-        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setContentsMargins(
+            20, 20, 20 + SIDEBAR_WIDTH_COLLAPSED + 15, 20
+        )
         main_layout.setSpacing(15)
 
         self.content_area = ContentArea(
@@ -176,17 +574,33 @@ class GalaxyHideout(QMainWindow):
             trade_service=self.trade_service,
             asset_service=self.asset_service,
             sound_player=self.sound_player,
+            backup_manager=self.backup_manager,
             on_trade_changed=self.refresh_all,
             on_close=self._close_overlay
         )
         self.content_area.set_overlay(self.overlay)
 
-        sidebar = self._build_sidebar()
-
         main_layout.addWidget(self.content_area)
-        main_layout.addWidget(sidebar)
+
+        sidebar = self._build_sidebar()
+        sidebar.setParent(central)
+        sidebar.raise_()
+        self._position_sidebar()
 
         self._apply_stylesheet()
+
+    def _position_sidebar(self):
+        central = self._central
+        width = self.sidebar.width()
+
+        self.sidebar.setGeometry(
+            central.width() - width, 0, width, central.height()
+        )
+        self.sidebar.raise_()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._position_sidebar()
 
     # =========================================================
     # HIDEOUT (permanent background / HUD)
@@ -207,7 +621,7 @@ class GalaxyHideout(QMainWindow):
 
         header_layout = QHBoxLayout()
 
-        hideout_title = QLabel("GALAXY HIDEOUT")
+        hideout_title = QLabel("MY HIDEOUT")
         hideout_title.setObjectName("hideoutTitle")
 
         header_layout.addWidget(hideout_title)
@@ -266,10 +680,10 @@ class GalaxyHideout(QMainWindow):
 
         layout.addWidget(activity_title)
 
-        self.activity_label = QLabel("")
-        self.activity_label.setObjectName("activity")
+        self.activity_grid = QGridLayout()
+        self.activity_grid.setSpacing(12)
 
-        layout.addWidget(self.activity_label)
+        layout.addLayout(self.activity_grid)
 
         # Space reserved for future Hideout additions.
         layout.addStretch()
@@ -285,6 +699,12 @@ class GalaxyHideout(QMainWindow):
         self.divine_rate_label.setObjectName("divineRateCorner")
 
         rate_layout.addWidget(self.divine_rate_label)
+
+        # Directive Q32: a small attribution indicator wherever
+        # market data is shown.
+        attribution_label = QLabel("via poe.ninja")
+        attribution_label.setObjectName("attribution")
+        rate_layout.addWidget(attribution_label)
 
         layout.addLayout(rate_layout)
 
@@ -329,26 +749,19 @@ class GalaxyHideout(QMainWindow):
 
                 self.hideout_trades_grid.addWidget(card, row, column)
 
+        clear_layout(self.activity_grid)
+
         activity = service.recent_activity(5)
 
         if not activity:
-            self.activity_label.setText("No activity yet.")
+            self.activity_grid.addWidget(
+                build_empty_state("No activity yet."),
+                0, 0, 1, 5
+            )
         else:
-            lines = []
-
-            for entry in activity:
-                line = (
-                    f"{entry['type']:<5} "
-                    f"{entry['item']} x{entry['quantity']}"
-                    f"    {entry['total_chaos']:,}c"
-                )
-
-                if entry["profit"] is not None:
-                    line += f"  ({entry['profit']:+,}c)"
-
-                lines.append(line)
-
-            self.activity_label.setText("\n".join(lines))
+            for index, entry in enumerate(activity):
+                card = build_transaction_card(entry, self.asset_service)
+                self.activity_grid.addWidget(card, 0, index)
 
         self.divine_rate_label.setText(
             f"◈ {service.divine_rate}"
@@ -360,17 +773,24 @@ class GalaxyHideout(QMainWindow):
 
     def _build_sidebar(self):
 
-        sidebar = QFrame()
+        self.sidebar_collapsed = True
+        self.sidebar_buttons = {}
+
+        sidebar = HoverSidebar(
+            on_enter=self._expand_sidebar,
+            on_leave=self._collapse_sidebar
+        )
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(180)
+        self.sidebar = sidebar
 
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(12)
 
-        title = QLabel("GALAXY\nHIDEOUT")
+        title = QLabel("")
         title.setObjectName("title")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.sidebar_title = title
 
         layout.addWidget(title)
         layout.addSpacing(20)
@@ -380,7 +800,7 @@ class GalaxyHideout(QMainWindow):
 
         for section in SIDEBAR_SECTIONS:
 
-            button = QPushButton(section)
+            button = QPushButton()
             button.setObjectName("sidebarItem")
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -390,11 +810,46 @@ class GalaxyHideout(QMainWindow):
             )
 
             self.sidebar_group.addButton(button)
+            self.sidebar_buttons[section] = button
             layout.addWidget(button)
 
         layout.addStretch()
 
+        self._apply_sidebar_state()
+
         return sidebar
+
+    def _sidebar_button_text(self, section):
+        icon = SIDEBAR_ICONS[section]
+
+        if self.sidebar_collapsed:
+            return icon
+
+        return f"{icon}  {section}"
+
+    def _expand_sidebar(self):
+        self.sidebar_collapsed = False
+        self._apply_sidebar_state()
+
+    def _collapse_sidebar(self):
+        self.sidebar_collapsed = True
+        self._apply_sidebar_state()
+
+    def _apply_sidebar_state(self):
+        if self.sidebar_collapsed:
+            self.sidebar.setFixedWidth(SIDEBAR_WIDTH_COLLAPSED)
+            self.sidebar_title.setText("DF")
+        else:
+            self.sidebar.setFixedWidth(SIDEBAR_WIDTH_EXPANDED)
+            self.sidebar_title.setText("DIVINE\nFLIPPER")
+
+        for section, button in self.sidebar_buttons.items():
+            button.setText(self._sidebar_button_text(section))
+            button.setProperty("collapsed", self.sidebar_collapsed)
+            button.style().unpolish(button)
+            button.style().polish(button)
+
+        self._position_sidebar()
 
     def _on_sidebar_clicked(self, section_name):
 
@@ -424,34 +879,44 @@ class GalaxyHideout(QMainWindow):
             checked_button.setChecked(False)
             self.sidebar_group.setExclusive(True)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape and self.overlay.isVisible():
+            self._close_overlay()
+            return
+
+        super().keyPressEvent(event)
+
     # =========================================================
     # STYLE
     # =========================================================
 
     def _apply_stylesheet(self):
 
-        self.setStyleSheet("""
+        stylesheet = """
 
             QMainWindow {
-                background: #0b0b12;
+                background: #08070f;
             }
 
             #sidebar {
-                background: #11111c;
-                border: 1px solid #303044;
-                border-radius: 8px;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #14121f, stop:1 #0d0c16
+                );
+                border: 1px solid #35304f;
+                border-radius: 10px;
             }
 
             #hideout {
-                background: #11111c;
-                border: 1px solid #303044;
-                border-radius: 8px;
+                background: transparent;
             }
 
             #title {
-                font-size: 20px;
+                font-family: __DISPLAY_FONT__;
+                font-size: 21px;
                 font-weight: bold;
-                color: #d8d8ff;
+                color: #d0c8ff;
+                letter-spacing: 2px;
             }
 
             QLabel {
@@ -460,8 +925,8 @@ class GalaxyHideout(QMainWindow):
             }
 
             #tradeCard {
-                background: #181824;
-                border: 1px solid #303044;
+                background: #181828;
+                border: 1px solid #35304f;
                 border-radius: 6px;
             }
 
@@ -476,40 +941,57 @@ class GalaxyHideout(QMainWindow):
                 font-size: 12px;
             }
 
+            #cardDivider {
+                background: #35304f;
+                max-height: 1px;
+                border: none;
+            }
+
             #hideoutTitle {
-                font-size: 26px;
+                font-family: __DISPLAY_FONT__;
+                font-size: 28px;
                 font-weight: bold;
-                color: #eeeeff;
+                color: #f0ecff;
+                letter-spacing: 3px;
+                border: 1px solid #35304f;
+                border-radius: 8px;
+                padding: 8px 18px;
             }
 
             #sectionTitle {
-                font-size: 18px;
+                font-family: __DISPLAY_FONT__;
+                font-size: 17px;
                 font-weight: bold;
-                color: #d8d8ff;
+                color: #c7bdff;
+                letter-spacing: 1px;
                 margin-top: 10px;
             }
 
             #summaryBox {
-                background: #181824;
-                border: 1px solid #303044;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1c1a30, stop:1 #161425
+                );
+                border: 1px solid #3a3560;
                 border-radius: 6px;
             }
 
             #summaryTitle {
-                color: #8888a8;
+                color: #9490b8;
                 font-size: 12px;
                 font-weight: bold;
+                letter-spacing: 1px;
             }
 
             #summaryValue {
-                color: #eeeeff;
+                color: #f0ecff;
                 font-size: 22px;
                 font-weight: bold;
             }
 
             #activity {
-                background: #181824;
-                border: 1px solid #303044;
+                background: #161425;
+                border: 1px solid #35304f;
                 border-radius: 6px;
                 padding: 12px;
                 color: #aaaac8;
@@ -517,50 +999,80 @@ class GalaxyHideout(QMainWindow):
             }
 
             #divineRateCorner {
-                color: #8888a8;
-                font-size: 12px;
+                color: #a8a0d8;
+                font-size: 13px;
                 font-weight: bold;
             }
 
+            #attribution {
+                color: #55506f;
+                font-size: 10px;
+                margin-left: 6px;
+            }
+
             QPushButton#sidebarItem {
-                color: #aaaac8;
+                color: #a8a4c8;
                 background: transparent;
                 border: 1px solid transparent;
+                border-left: 3px solid transparent;
                 border-radius: 5px;
                 font-size: 14px;
                 font-weight: bold;
+                letter-spacing: 1px;
                 padding: 10px;
+                padding-left: 12px;
                 text-align: left;
             }
 
             QPushButton#sidebarItem:hover {
                 color: #eeeeff;
-                background: #181824;
-                border: 1px solid #303044;
+                background: #1c1a30;
+                border: 1px solid #3a3560;
+                border-left: 3px solid #6a5fd8;
             }
 
             QPushButton#sidebarItem:checked {
-                color: #eeeeff;
-                background: #22223a;
-                border: 1px solid #4a4a72;
+                color: #f0ecff;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #2a2650, stop:1 #1c1a30
+                );
+                border: 1px solid #5a4fc8;
+                border-left: 3px solid #9a8fff;
+            }
+
+            QPushButton#sidebarItem[collapsed="true"] {
+                text-align: center;
+                padding-left: 0px;
+                font-size: 20px;
             }
 
             #overlayPanel {
-                background: #14141f;
-                border: 1px solid #4a4a72;
-                border-radius: 10px;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #17152a, stop:1 #100e1c
+                );
+                border: 1px solid #5a4fc8;
+                border-radius: 12px;
+            }
+
+            #overlayTitleBar {
+                border-bottom: 1px solid #3a3560;
+                padding-bottom: 12px;
             }
 
             #overlayTitle {
-                font-size: 18px;
+                font-family: __DISPLAY_FONT__;
+                font-size: 19px;
                 font-weight: bold;
-                color: #eeeeff;
+                color: #f0ecff;
+                letter-spacing: 2px;
             }
 
             QPushButton#overlayCloseButton {
                 color: #aaaac8;
-                background: #181824;
-                border: 1px solid #303044;
+                background: #181828;
+                border: 1px solid #3a3560;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -569,7 +1081,7 @@ class GalaxyHideout(QMainWindow):
 
             QPushButton#overlayCloseButton:hover {
                 color: #eeeeff;
-                border: 1px solid #4a4a72;
+                border: 1px solid #6a5fd8;
             }
 
             #overlayPlaceholder {
@@ -579,8 +1091,8 @@ class GalaxyHideout(QMainWindow):
 
             QPushButton#fauxTab {
                 color: #aaaac8;
-                background: #181824;
-                border: 1px solid #303044;
+                background: #181828;
+                border: 1px solid #35304f;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -588,33 +1100,58 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#fauxTab:checked {
-                color: #eeeeff;
-                background: #22223a;
-                border: 1px solid #4a4a72;
+                color: #f0ecff;
+                background: #292450;
+                border: 1px solid #6a5fd8;
             }
 
             QPushButton#fauxTab:disabled {
-                color: #555570;
+                color: #55506f;
+            }
+
+            QPushButton#currencyToggle {
+                color: #aaaac8;
+                background: #181828;
+                border: 1px solid #35304f;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 6px 16px;
+            }
+
+            QPushButton#currencyToggle:hover {
+                color: #eeeeff;
+                border: 1px solid #6a5fd8;
+            }
+
+            QPushButton#currencyToggle:checked {
+                color: #f0ecff;
+                background: #292450;
+                border: 1px solid #9a8bff;
             }
 
             QPushButton#primaryButton {
                 color: #0b0b12;
-                background: #a8a8ff;
-                border: 1px solid #a8a8ff;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #b0a4ff, stop:1 #9a8bff
+                );
+                border: 1px solid #9a8bff;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
+                letter-spacing: 1px;
                 padding: 10px 20px;
             }
 
             QPushButton#primaryButton:hover {
-                background: #c0c0ff;
+                background: #c4baff;
             }
 
             QPushButton#secondaryButton {
                 color: #aaaac8;
                 background: transparent;
-                border: 1px solid #303044;
+                border: 1px solid #35304f;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -623,22 +1160,29 @@ class GalaxyHideout(QMainWindow):
 
             QPushButton#secondaryButton:hover {
                 color: #eeeeff;
-                border: 1px solid #4a4a72;
+                border: 1px solid #6a5fd8;
+            }
+
+            QPushButton#dangerButton {
+                color: #ff9a9a;
+                background: transparent;
+                border: 1px solid #6a3535;
+                border-radius: 5px;
+                font-size: 12px;
+                font-weight: bold;
+                padding: 8px 16px;
+            }
+
+            QPushButton#dangerButton:hover {
+                color: #ffffff;
+                background: #5a1f1f;
+                border: 1px solid #c85a5a;
             }
 
             #formLabel {
                 color: #8888a8;
                 font-size: 12px;
                 font-weight: bold;
-            }
-
-            #confirmSummary {
-                background: #181824;
-                border: 1px solid #303044;
-                border-radius: 6px;
-                padding: 15px;
-                color: #eeeeff;
-                font-size: 13px;
             }
 
             QPushButton#transactionRow {
@@ -661,14 +1205,32 @@ class GalaxyHideout(QMainWindow):
 
             QComboBox, QSpinBox, QLineEdit {
                 color: #eeeeff;
-                background: #181824;
-                border: 1px solid #303044;
+                background: #181828;
+                border: 1px solid #35304f;
                 border-radius: 5px;
                 padding: 6px;
                 font-size: 13px;
             }
 
-        """)
+            QComboBox:focus, QSpinBox:focus, QLineEdit:focus {
+                border: 1px solid #6a5fd8;
+            }
+
+            QComboBox#itemPicker {
+                font-size: 18px;
+                padding: 10px;
+            }
+
+            QLineEdit:read-only {
+                color: #8888a8;
+                background: #12111f;
+            }
+
+        """
+
+        self.setStyleSheet(
+            stylesheet.replace("__DISPLAY_FONT__", self.display_font)
+        )
 
 
 # =============================================================
@@ -732,6 +1294,7 @@ class OverlayPanel(QFrame):
         trade_service,
         asset_service,
         sound_player,
+        backup_manager,
         on_trade_changed,
         on_close,
         parent=None
@@ -747,7 +1310,11 @@ class OverlayPanel(QFrame):
         layout.setContentsMargins(20, 15, 20, 20)
         layout.setSpacing(15)
 
-        title_bar = QHBoxLayout()
+        title_bar_widget = QWidget()
+        title_bar_widget.setObjectName("overlayTitleBar")
+
+        title_bar = QHBoxLayout(title_bar_widget)
+        title_bar.setContentsMargins(0, 0, 0, 0)
 
         self.title_label = QLabel("")
         self.title_label.setObjectName("overlayTitle")
@@ -762,7 +1329,7 @@ class OverlayPanel(QFrame):
 
         title_bar.addWidget(close_button)
 
-        layout.addLayout(title_bar)
+        layout.addWidget(title_bar_widget)
 
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
@@ -775,11 +1342,13 @@ class OverlayPanel(QFrame):
         self._pages["FAUSTUS"] = self.faustus_page
         self.stack.addWidget(self.faustus_page)
 
-        self.stash_page = StashPage(trade_service)
+        self.stash_page = StashPage(
+            trade_service, asset_service, on_sell=self._sell_from_stash
+        )
         self._pages["STASH"] = self.stash_page
         self.stack.addWidget(self.stash_page)
 
-        self.trades_page = TradesPage(trade_service)
+        self.trades_page = TradesPage(trade_service, on_trade_changed)
         self._pages["TRADES"] = self.trades_page
         self.stack.addWidget(self.trades_page)
 
@@ -787,7 +1356,9 @@ class OverlayPanel(QFrame):
         self._pages["ANALYTICS"] = self.analytics_page
         self.stack.addWidget(self.analytics_page)
 
-        self.settings_page = SettingsPage(trade_service, on_trade_changed)
+        self.settings_page = SettingsPage(
+            trade_service, asset_service, backup_manager, on_trade_changed
+        )
         self._pages["SETTINGS"] = self.settings_page
         self.stack.addWidget(self.settings_page)
 
@@ -808,6 +1379,16 @@ class OverlayPanel(QFrame):
         self._current_section = section_name
         self.title_label.setText(section_name)
         self.stack.setCurrentWidget(self._pages[section_name])
+
+        if section_name == "TRADES":
+            self.trades_page.reset_filters()
+
+        if section_name == "ANALYTICS":
+            self.analytics_page.show_today()
+
+    def _sell_from_stash(self, trade):
+        self.faustus_page._start_close_trade(trade)
+        self.show_section("FAUSTUS")
 
     def refresh(self):
         self.faustus_page.refresh()
@@ -857,6 +1438,7 @@ class FaustusPage(QWidget):
         self.asset_service = asset_service
         self.sound_player = sound_player
         self.on_trade_changed = on_trade_changed
+        self._active_trade = None
 
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
@@ -907,8 +1489,6 @@ class FaustusPage(QWidget):
         self.top_stack.addWidget(self._build_close_form())    # 3
         self.top_stack.addWidget(self._build_close_confirm()) # 4
 
-        self._active_trade = None
-
         trades_title = QLabel("OPEN TRADES")
         trades_title.setObjectName("sectionTitle")
         layout.addWidget(trades_title)
@@ -934,53 +1514,180 @@ class FaustusPage(QWidget):
 
         form_page = QWidget()
         outer = QVBoxLayout(form_page)
-
-        form = QFormLayout()
-        form.setSpacing(10)
+        outer.setSpacing(15)
 
         self.item_input = QComboBox()
-        self._populate_item_input()
+        self.item_input.setObjectName("itemPicker")
+        self._setup_item_input(self.item_input)
+        outer.addWidget(self.item_input)
 
         self.quantity_input = QSpinBox()
         self.quantity_input.setRange(1, 100_000)
         self.quantity_input.setValue(1)
-
-        self.currency_input = QComboBox()
-        self.currency_input.addItems(["CHAOS", "DIVINE"])
+        self.quantity_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
         self.price_input = QSpinBox()
         self.price_input.setRange(1, 10_000_000)
         self.price_input.setValue(1)
+        self.price_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
-        self.gold_input = QSpinBox()
-        self.gold_input.setRange(0, 100_000_000)
-        self.gold_input.setValue(0)
+        self.total_input = QSpinBox()
+        self.total_input.setRange(1, 2_000_000_000)
+        self.total_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
-        form.addRow("Item", self.item_input)
-        form.addRow("Quantity", self.quantity_input)
-        form.addRow("Currency", self.currency_input)
-        form.addRow("Price per item", self.price_input)
-        form.addRow("Gold spent", self.gold_input)
+        self.buy_calc_linker = QuantityPriceTotalLinker(
+            self.quantity_input, self.price_input, self.total_input
+        )
 
-        outer.addLayout(form)
+        calc_row = QHBoxLayout()
+        calc_row.setSpacing(15)
+        calc_row.addLayout(
+            self._build_labeled_field("QUANTITY", self.quantity_input)
+        )
+        calc_row.addLayout(
+            self._build_labeled_field(
+                "PRICE PER ITEM", self.price_input
+            )
+        )
+        calc_row.addLayout(
+            self._build_labeled_field("TOTAL", self.total_input)
+        )
+        outer.addLayout(calc_row)
+
+        (
+            currency_row,
+            self.chaos_button,
+            self.divine_button,
+            self.buy_currency_group
+        ) = self._build_currency_toggle()
+        outer.addWidget(currency_row)
+
+        self.gold_display = QLineEdit()
+        self.gold_display.setReadOnly(True)
+        self.gold_estimator = GoldEstimator(
+            self.quantity_input,
+            self.total_input,
+            self.chaos_button,
+            self.divine_button,
+            self.gold_display,
+            item_name_getter=lambda: self.item_input.currentText(),
+            item_change_signal=self.item_input.currentIndexChanged
+        )
+        outer.addLayout(
+            self._build_labeled_field(
+                "GOLD SPENT", self.gold_display
+            )
+        )
 
         review_button = QPushButton("REVIEW BUY")
         review_button.setObjectName("primaryButton")
         review_button.clicked.connect(self._show_buy_confirm)
 
         outer.addWidget(review_button)
+        outer.addStretch()
 
         return form_page
 
-    def _populate_item_input(self):
+    def _build_labeled_field(self, caption, field_widget):
+        column = QVBoxLayout()
+        column.setSpacing(4)
+
+        label = QLabel(caption)
+        label.setObjectName("formLabel")
+        column.addWidget(label)
+        column.addWidget(field_widget)
+
+        return column
+
+    def _setup_item_input(self, combo_box):
         # Sourced entirely from the live poe.ninja catalog (Hugo's
-        # call) — no free-text/custom entries, so item_input is a
-        # picker, not an editable combo box.
+        # call) — no free-text/custom entries. Chaos Orb is excluded:
+        # it's the base currency everything is priced in, so it can't
+        # sensibly be a trade target itself. Editable + a completer in
+        # MatchContains mode gives live type-to-filter search over the
+        # ~290 remaining items; NoInsert stops typed text becoming a
+        # new item, and a fixed-text lookup on selection keeps
+        # currentData() (the asset id) resolving correctly.
+        combo_box.setEditable(True)
+        combo_box.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        combo_box.setMaxVisibleItems(15)
+
         for asset in self.asset_service.active_assets():
+            if asset.name == "Chaos Orb":
+                continue
+
+            if not is_gold_exchange_eligible(asset.name):
+                continue
+
             icon_path = self.asset_service.icon_file_path(asset)
             icon = QIcon(QPixmap(str(icon_path))) if icon_path else QIcon()
 
-            self.item_input.addItem(icon, asset.name, userData=asset.id)
+            combo_box.addItem(icon, asset.name, userData=asset.id)
+
+        completer = combo_box.completer()
+        completer.setCompletionMode(
+            QCompleter.CompletionMode.PopupCompletion
+        )
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
+        def sync_selection(text):
+            index = combo_box.findText(
+                text, Qt.MatchFlag.MatchFixedString
+            )
+
+            if index >= 0:
+                combo_box.setCurrentIndex(index)
+
+        completer.activated.connect(sync_selection)
+
+    def _build_currency_toggle(self):
+        container = QWidget()
+
+        row = QHBoxLayout(container)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(8)
+
+        chaos_button = self._build_currency_button(
+            "CHAOS", self.asset_service.get_asset_by_name("Chaos Orb")
+        )
+        divine_button = self._build_currency_button(
+            "DIVINE", self.asset_service.get_asset_by_name("Divine Orb")
+        )
+
+        group = QButtonGroup(container)
+        group.setExclusive(True)
+        group.addButton(chaos_button)
+        group.addButton(divine_button)
+
+        chaos_button.setChecked(True)
+
+        row.addWidget(chaos_button)
+        row.addWidget(divine_button)
+        row.addStretch()
+
+        return container, chaos_button, divine_button, group
+
+    def _build_currency_button(self, label, asset):
+        button = QPushButton(f"  {label}")
+        button.setObjectName("currencyToggle")
+        button.setCheckable(True)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        if asset is not None:
+            icon_path = self.asset_service.icon_file_path(asset)
+
+            if icon_path is not None:
+                button.setIcon(QIcon(QPixmap(str(icon_path))))
+                button.setIconSize(QSize(20, 20))
+
+        return button
 
     def _build_buy_confirm(self):
 
@@ -988,9 +1695,10 @@ class FaustusPage(QWidget):
         layout = QVBoxLayout(confirm_page)
         layout.setSpacing(15)
 
-        self.confirm_summary = QLabel("")
-        self.confirm_summary.setObjectName("confirmSummary")
-        layout.addWidget(self.confirm_summary)
+        self.confirm_card = QFrame()
+        self.confirm_card.setObjectName("tradeCard")
+        self.confirm_card_layout = QVBoxLayout(self.confirm_card)
+        layout.addWidget(self.confirm_card)
 
         button_row = QHBoxLayout()
 
@@ -1019,38 +1727,41 @@ class FaustusPage(QWidget):
 
         item_name = self.item_input.currentText()
         quantity = self.quantity_input.value()
-        currency = self.currency_input.currentText()
+        currency = self._current_buy_currency()
         price = self.price_input.value()
-        gold = self.gold_input.value()
+        gold = self.gold_estimator.current_gold_estimate()
+        gold_display = f"{gold:,}" if gold is not None else "N/A"
 
         if currency == "DIVINE":
             unit_chaos = self.trade_service.divine_to_chaos(price)
             price_line = (
-                f"Price: {price} Divine each "
+                f"{quantity} @ {price} Divine each "
                 f"({unit_chaos:,}c each)"
             )
         else:
             unit_chaos = price
-            price_line = f"Price: {price:,}c each"
+            price_line = f"{quantity} @ {price:,}c each"
 
         total_chaos = unit_chaos * quantity
 
-        lines = [
-            "Transaction information",
-            "-----------------------",
-            f"Item: {item_name}",
-            "Type: BUY",
-            f"Quantity: {quantity}",
+        populate_confirm_card(
+            self.confirm_card_layout,
+            self.asset_service,
+            item_name,
+            "BUY",
             price_line,
-            f"Total: {total_chaos:,}c",
-            f"Gold spent: {gold:,}",
-        ]
-
-        self.confirm_summary.setText("\n".join(lines))
+            [
+                ("TOTAL", f"{total_chaos:,}c"),
+                ("GOLD SPENT", gold_display),
+            ]
+        )
         self.top_stack.setCurrentIndex(1)
 
     def _cancel_buy(self):
         self.top_stack.setCurrentIndex(0)
+
+    def _current_buy_currency(self):
+        return "DIVINE" if self.divine_button.isChecked() else "CHAOS"
 
     def _confirm_buy(self):
 
@@ -1061,9 +1772,9 @@ class FaustusPage(QWidget):
 
         item_name = self.item_input.currentText()
         quantity = self.quantity_input.value()
-        currency = self.currency_input.currentText()
+        currency = self._current_buy_currency()
         price = self.price_input.value()
-        gold = self.gold_input.value()
+        gold = self.gold_estimator.current_gold_estimate() or 0
 
         self.trade_service.open_trade(
             item_name=item_name,
@@ -1081,10 +1792,8 @@ class FaustusPage(QWidget):
 
     def _reset_buy_form(self):
         self.item_input.setCurrentIndex(0)
-        self.quantity_input.setValue(1)
-        self.currency_input.setCurrentIndex(0)
-        self.price_input.setValue(1)
-        self.gold_input.setValue(0)
+        self.chaos_button.setChecked(True)
+        self.buy_calc_linker.reset(quantity=1, price=1)
 
     # -----------------------------------------------------
     # SELL / CLOSE TRADE WORKFLOW
@@ -1094,40 +1803,87 @@ class FaustusPage(QWidget):
 
         form_page = QWidget()
         outer = QVBoxLayout(form_page)
+        outer.setSpacing(15)
 
         self.close_trade_title = QLabel("")
         self.close_trade_title.setObjectName("sectionTitle")
         outer.addWidget(self.close_trade_title)
 
-        form = QFormLayout()
-        form.setSpacing(10)
-
         self.sell_quantity_input = QSpinBox()
         self.sell_quantity_input.setRange(1, 1)
-
-        self.sell_currency_input = QComboBox()
-        self.sell_currency_input.addItems(["CHAOS", "DIVINE"])
+        self.sell_quantity_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
         self.sell_price_input = QSpinBox()
         self.sell_price_input.setRange(1, 10_000_000)
         self.sell_price_input.setValue(1)
+        self.sell_price_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
-        self.sell_gold_input = QSpinBox()
-        self.sell_gold_input.setRange(0, 100_000_000)
-        self.sell_gold_input.setValue(0)
+        self.sell_total_input = QSpinBox()
+        self.sell_total_input.setRange(1, 2_000_000_000)
+        self.sell_total_input.setButtonSymbols(
+            QAbstractSpinBox.ButtonSymbols.NoButtons
+        )
 
-        form.addRow("Quantity", self.sell_quantity_input)
-        form.addRow("Currency", self.sell_currency_input)
-        form.addRow("Price per item", self.sell_price_input)
-        form.addRow("Gold received", self.sell_gold_input)
+        self.sell_calc_linker = QuantityPriceTotalLinker(
+            self.sell_quantity_input,
+            self.sell_price_input,
+            self.sell_total_input
+        )
 
-        outer.addLayout(form)
+        calc_row = QHBoxLayout()
+        calc_row.setSpacing(15)
+        calc_row.addLayout(
+            self._build_labeled_field(
+                "QUANTITY", self.sell_quantity_input
+            )
+        )
+        calc_row.addLayout(
+            self._build_labeled_field(
+                "PRICE PER ITEM", self.sell_price_input
+            )
+        )
+        calc_row.addLayout(
+            self._build_labeled_field("TOTAL", self.sell_total_input)
+        )
+        outer.addLayout(calc_row)
+
+        (
+            sell_currency_row,
+            self.sell_chaos_button,
+            self.sell_divine_button,
+            self.sell_currency_group
+        ) = self._build_currency_toggle()
+        outer.addWidget(sell_currency_row)
+
+        self.sell_gold_display = QLineEdit()
+        self.sell_gold_display.setReadOnly(True)
+        self.sell_gold_estimator = GoldEstimator(
+            self.sell_quantity_input,
+            self.sell_total_input,
+            self.sell_chaos_button,
+            self.sell_divine_button,
+            self.sell_gold_display,
+            item_name_getter=(
+                lambda: self._active_trade.item_name
+                if self._active_trade else ""
+            )
+        )
+        outer.addLayout(
+            self._build_labeled_field(
+                "GOLD RECEIVED", self.sell_gold_display
+            )
+        )
 
         review_button = QPushButton("REVIEW SELL")
         review_button.setObjectName("primaryButton")
         review_button.clicked.connect(self._show_sell_confirm)
 
         outer.addWidget(review_button)
+        outer.addStretch()
 
         return form_page
 
@@ -1137,9 +1893,10 @@ class FaustusPage(QWidget):
         layout = QVBoxLayout(confirm_page)
         layout.setSpacing(15)
 
-        self.close_confirm_summary = QLabel("")
-        self.close_confirm_summary.setObjectName("confirmSummary")
-        layout.addWidget(self.close_confirm_summary)
+        self.close_confirm_card = QFrame()
+        self.close_confirm_card.setObjectName("tradeCard")
+        self.close_confirm_card_layout = QVBoxLayout(self.close_confirm_card)
+        layout.addWidget(self.close_confirm_card)
 
         button_row = QHBoxLayout()
 
@@ -1169,12 +1926,16 @@ class FaustusPage(QWidget):
 
         self.sell_quantity_input.setRange(1, trade.remaining)
         self.sell_quantity_input.setValue(trade.remaining)
-        self.sell_currency_input.setCurrentIndex(0)
+        self.sell_chaos_button.setChecked(True)
         self.sell_price_input.setValue(1)
-        self.sell_gold_input.setValue(0)
 
         self.sell_tab.setChecked(True)
         self.top_stack.setCurrentIndex(3)
+
+    def _current_sell_currency(self):
+        return (
+            "DIVINE" if self.sell_divine_button.isChecked() else "CHAOS"
+        )
 
     def _show_sell_confirm(self):
 
@@ -1184,38 +1945,38 @@ class FaustusPage(QWidget):
             return
 
         quantity = self.sell_quantity_input.value()
-        currency = self.sell_currency_input.currentText()
+        currency = self._current_sell_currency()
         price = self.sell_price_input.value()
-        gold = self.sell_gold_input.value()
+        gold = self.sell_gold_estimator.current_gold_estimate()
+        gold_display = f"{gold:,}" if gold is not None else "N/A"
 
         if currency == "DIVINE":
             unit_chaos = self.trade_service.divine_to_chaos(price)
             price_line = (
-                f"Price: {price} Divine each "
+                f"{quantity} @ {price} Divine each "
                 f"({unit_chaos:,}c each)"
             )
         else:
             unit_chaos = price
-            price_line = f"Price: {price:,}c each"
+            price_line = f"{quantity} @ {price:,}c each"
 
         total_chaos = unit_chaos * quantity
         cost_chaos = trade.unit_price_chaos * quantity
         profit = total_chaos - cost_chaos
 
-        lines = [
-            "Transaction information",
-            "-----------------------",
-            f"Item: {trade.item_name}",
-            "Type: SELL",
-            f"Quantity: {quantity}",
+        populate_confirm_card(
+            self.close_confirm_card_layout,
+            self.asset_service,
+            trade.item_name,
+            "SELL",
             price_line,
-            f"Total: {total_chaos:,}c",
-            f"Cost basis: {cost_chaos:,}c",
-            f"Profit: {profit:+,}c",
-            f"Gold received: {gold:,}",
-        ]
-
-        self.close_confirm_summary.setText("\n".join(lines))
+            [
+                ("TOTAL", f"{total_chaos:,}c"),
+                ("COST BASIS", f"{cost_chaos:,}c"),
+                ("PROFIT", f"{profit:+,}c"),
+                ("GOLD RECEIVED", gold_display),
+            ]
+        )
         self.top_stack.setCurrentIndex(4)
 
     def _cancel_sell(self):
@@ -1229,9 +1990,9 @@ class FaustusPage(QWidget):
             return
 
         quantity = self.sell_quantity_input.value()
-        currency = self.sell_currency_input.currentText()
+        currency = self._current_sell_currency()
         price = self.sell_price_input.value()
-        gold = self.sell_gold_input.value()
+        gold = self.sell_gold_estimator.current_gold_estimate() or 0
 
         sale = self.trade_service.sell_from_trade(
             trade_id=trade.id,
@@ -1285,10 +2046,13 @@ class FaustusPage(QWidget):
 
 class StashPage(QWidget):
 
-    def __init__(self, trade_service, parent=None):
+    def __init__(self, trade_service, asset_service, on_sell, parent=None):
         super().__init__(parent)
 
         self.trade_service = trade_service
+        self.asset_service = asset_service
+        self.on_sell = on_sell
+        self._expanded_item = None
 
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
@@ -1307,11 +2071,11 @@ class StashPage(QWidget):
         if not summary:
             self.grid.addWidget(
                 build_empty_state("Stash is empty."),
-                0, 0, 1, 3
+                0, 0, 1, 4
             )
             return
 
-        headers = ["ITEM", "QUANTITY", "COST BASIS"]
+        headers = ["ITEM", "QUANTITY", "COST BASIS", ""]
 
         for column, text in enumerate(headers):
             header_label = QLabel(text)
@@ -1324,23 +2088,57 @@ class StashPage(QWidget):
         row = 1
 
         for entry in summary:
-            item_label = QLabel(entry["item_name"])
+            item_name = entry["item_name"]
+
+            item_row = QHBoxLayout()
+
+            icon_path = self._icon_path_for(item_name)
+
+            if icon_path is not None:
+                icon_label = QLabel()
+                icon_label.setPixmap(
+                    QPixmap(str(icon_path)).scaled(
+                        20, 20,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+                )
+                item_row.addWidget(icon_label)
+
+            item_label = QLabel(item_name)
             item_label.setObjectName("tradeTitle")
+            item_row.addWidget(item_label)
+            item_row.addStretch()
+
+            self.grid.addLayout(item_row, row, 0)
 
             quantity_label = QLabel(str(entry["quantity"]))
             quantity_label.setObjectName("tradeInfo")
+            self.grid.addWidget(quantity_label, row, 1)
 
             cost_label = QLabel(f"{entry['cost_chaos']:,}c")
             cost_label.setObjectName("tradeInfo")
-
-            self.grid.addWidget(item_label, row, 0)
-            self.grid.addWidget(quantity_label, row, 1)
             self.grid.addWidget(cost_label, row, 2)
+
+            details_button = QPushButton(
+                "HIDE" if self._expanded_item == item_name else "DETAILS"
+            )
+            details_button.setObjectName("secondaryButton")
+            details_button.clicked.connect(
+                lambda checked, name=item_name: self._toggle_details(name)
+            )
+            self.grid.addWidget(details_button, row, 3)
 
             total_quantity += entry["quantity"]
             total_cost += entry["cost_chaos"]
 
             row += 1
+
+            if self._expanded_item == item_name:
+                self.grid.addWidget(
+                    self._build_detail_panel(item_name), row, 0, 1, 4
+                )
+                row += 1
 
         total_item_label = QLabel("TOTAL")
         total_item_label.setObjectName("formLabel")
@@ -1355,6 +2153,46 @@ class StashPage(QWidget):
         self.grid.addWidget(total_quantity_label, row, 1)
         self.grid.addWidget(total_cost_label, row, 2)
 
+    def _icon_path_for(self, item_name):
+        asset = self.asset_service.get_asset_by_name(item_name)
+
+        if asset is None:
+            return None
+
+        return self.asset_service.icon_file_path(asset)
+
+    def _toggle_details(self, item_name):
+        if self._expanded_item == item_name:
+            self._expanded_item = None
+        else:
+            self._expanded_item = item_name
+
+        self.refresh()
+
+    def _build_detail_panel(self, item_name):
+        panel = QFrame()
+        panel.setObjectName("tradeCard")
+
+        layout = QVBoxLayout(panel)
+
+        trades = self.trade_service.open_trades_for_item(item_name)
+
+        title = QLabel(f"{item_name} — {len(trades)} open trade(s)")
+        title.setObjectName("formLabel")
+        layout.addWidget(title)
+
+        cards_row = QHBoxLayout()
+
+        for trade in trades:
+            cards_row.addWidget(
+                build_trade_card(trade, interactive=True, on_sell=self.on_sell)
+            )
+
+        cards_row.addStretch()
+        layout.addLayout(cards_row)
+
+        return panel
+
 
 # =============================================================
 # TRADES PAGE — complete historical BUY/SELL activity
@@ -1362,8 +2200,12 @@ class StashPage(QWidget):
 
 class TransactionRow(QFrame):
 
-    def __init__(self, transaction, parent=None):
+    def __init__(self, transaction, trade_service, on_deleted, parent=None):
         super().__init__(parent)
+
+        self.transaction = transaction
+        self.trade_service = trade_service
+        self.on_deleted = on_deleted
 
         self.setObjectName("tradeCard")
 
@@ -1382,8 +2224,42 @@ class TransactionRow(QFrame):
         self.detail_label.setVisible(False)
         layout.addWidget(self.detail_label)
 
+        self.delete_button = QPushButton("DELETE")
+        self.delete_button.setObjectName("dangerButton")
+        self.delete_button.setVisible(False)
+        self.delete_button.clicked.connect(self._delete)
+        layout.addWidget(self.delete_button)
+
     def _toggle(self):
-        self.detail_label.setVisible(not self.detail_label.isVisible())
+        expanded = not self.detail_label.isVisible()
+        self.detail_label.setVisible(expanded)
+        self.delete_button.setVisible(expanded)
+
+    def _delete(self):
+        confirm = QMessageBox.question(
+            self,
+            "Delete transaction",
+            f"Delete this {self.transaction['type']} of "
+            f"{self.transaction['item']}? This cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            if self.transaction["type"] == "SELL":
+                self.trade_service.delete_sale(self.transaction["sale_id"])
+            else:
+                self.trade_service.delete_trade(
+                    self.transaction["trade_id"]
+                )
+        except TradeHasSalesError as error:
+            QMessageBox.warning(self, "Can't delete this BUY", str(error))
+            return
+
+        self.on_deleted()
 
     @staticmethod
     def _summary_text(transaction):
@@ -1428,26 +2304,45 @@ class TransactionRow(QFrame):
 
 class TradesPage(QWidget):
 
-    def __init__(self, trade_service, parent=None):
+    def __init__(self, trade_service, on_trade_changed, parent=None):
         super().__init__(parent)
 
         self.trade_service = trade_service
+        self.on_trade_changed = on_trade_changed
 
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
 
         filters_layout = QHBoxLayout()
+        filters_layout.setSpacing(10)
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search item...")
+        self.search_input.setMaximumWidth(220)
         self.search_input.textChanged.connect(self.refresh)
-
-        self.type_filter = QComboBox()
-        self.type_filter.addItems(["ALL", "BUY", "SELL"])
-        self.type_filter.currentTextChanged.connect(self.refresh)
-
         filters_layout.addWidget(self.search_input)
-        filters_layout.addWidget(self.type_filter)
+
+        self.type_filter_group = QButtonGroup(self)
+        self.type_filter_group.setExclusive(True)
+
+        self.filter_all_button = QPushButton("ALL")
+        self.filter_buy_button = QPushButton("BUY")
+        self.filter_sell_button = QPushButton("SELL")
+
+        for button in (
+            self.filter_all_button,
+            self.filter_buy_button,
+            self.filter_sell_button
+        ):
+            button.setObjectName("fauxTab")
+            button.setCheckable(True)
+            button.clicked.connect(self.refresh)
+            self.type_filter_group.addButton(button)
+            filters_layout.addWidget(button)
+
+        self.filter_all_button.setChecked(True)
+
+        filters_layout.addStretch()
 
         layout.addLayout(filters_layout)
 
@@ -1463,11 +2358,23 @@ class TradesPage(QWidget):
 
         layout.addWidget(scroll_area)
 
+    def _current_type_filter(self):
+        if self.filter_buy_button.isChecked():
+            return "BUY"
+        if self.filter_sell_button.isChecked():
+            return "SELL"
+        return "ALL"
+
+    def reset_filters(self):
+        self.search_input.clear()
+        self.filter_all_button.setChecked(True)
+        self.refresh()
+
     def refresh(self):
         clear_layout(self.rows_layout)
 
         query = self.search_input.text().strip().lower()
-        type_filter = self.type_filter.currentText()
+        type_filter = self._current_type_filter()
 
         transactions = [
             transaction
@@ -1486,10 +2393,18 @@ class TradesPage(QWidget):
         else:
             for transaction in transactions:
                 self.rows_layout.addWidget(
-                    TransactionRow(transaction)
+                    TransactionRow(
+                        transaction,
+                        self.trade_service,
+                        on_deleted=self._handle_deleted
+                    )
                 )
 
         self.rows_layout.addStretch()
+
+    def _handle_deleted(self):
+        self.refresh()
+        self.on_trade_changed()
 
 
 # =============================================================
@@ -1529,7 +2444,7 @@ class AnalyticsPage(QWidget):
         summary_layout.setSpacing(12)
 
         self.profit_box, self.profit_value = build_summary_box("PROFIT")
-        self.roi_box, self.roi_value = build_summary_box("ROI")
+        self.roi_box, self.roi_value = build_summary_box("% RETURN")
         self.volume_box, self.volume_value = (
             build_summary_box("TRADING VOLUME")
         )
@@ -1541,6 +2456,41 @@ class AnalyticsPage(QWidget):
             summary_layout.addWidget(box)
 
         self.content_layout.addLayout(summary_layout)
+
+        # ---------------------------------------------------------
+        # VIEWING BANNER (Today vs a selected historical day)
+        # ---------------------------------------------------------
+
+        viewing_row = QHBoxLayout()
+
+        self.viewing_label = QLabel("Viewing: TODAY")
+        self.viewing_label.setObjectName("sectionTitle")
+        viewing_row.addWidget(self.viewing_label)
+        viewing_row.addStretch()
+
+        self.back_to_today_button = QPushButton("BACK TO TODAY")
+        self.back_to_today_button.setObjectName("secondaryButton")
+        self.back_to_today_button.clicked.connect(self.show_today)
+        self.back_to_today_button.setVisible(False)
+        viewing_row.addWidget(self.back_to_today_button)
+
+        self.content_layout.addLayout(viewing_row)
+
+        self.history_detail_box = QFrame()
+        self.history_detail_box.setObjectName("tradeCard")
+        self.history_detail_box.setVisible(False)
+
+        detail_layout = QVBoxLayout(self.history_detail_box)
+
+        self.history_detail_stats_label = QLabel("")
+        self.history_detail_stats_label.setObjectName("tradeInfo")
+        detail_layout.addWidget(self.history_detail_stats_label)
+
+        self.history_detail_counts_label = QLabel("")
+        self.history_detail_counts_label.setObjectName("tradeInfo")
+        detail_layout.addWidget(self.history_detail_counts_label)
+
+        self.content_layout.addWidget(self.history_detail_box)
 
         # ---------------------------------------------------------
         # NEW TRADES VS CARRY-OVER SALES
@@ -1586,10 +2536,9 @@ class AnalyticsPage(QWidget):
         history_title.setObjectName("sectionTitle")
         self.content_layout.addWidget(history_title)
 
-        self.history_label = build_empty_state(
-            "No previous Trading Days yet."
-        )
-        self.content_layout.addWidget(self.history_label)
+        self.history_grid = QGridLayout()
+        self.history_grid.setSpacing(10)
+        self.content_layout.addLayout(self.history_grid)
 
         self.content_layout.addStretch()
 
@@ -1664,6 +2613,56 @@ class AnalyticsPage(QWidget):
             f"{summary['total_realized_profit']:+,}c"
         )
 
+        clear_layout(self.history_grid)
+
+        closed_days = self.trade_service.closed_trading_days()
+
+        if not closed_days:
+            self.history_grid.addWidget(
+                build_empty_state("No previous Trading Days yet."),
+                0, 0, 1, 4
+            )
+        else:
+            for index, day in enumerate(closed_days):
+                card = build_history_day_card(
+                    day, on_click=self.show_historical_day
+                )
+
+                row = index // 4
+                column = index % 4
+
+                self.history_grid.addWidget(card, row, column)
+
+    def show_today(self):
+        self.viewing_label.setText("Viewing: TODAY")
+        self.back_to_today_button.setVisible(False)
+        self.history_detail_box.setVisible(False)
+
+    def show_historical_day(self, trading_day):
+        date_label = trading_day.started_at.split(" ")[0]
+
+        self.viewing_label.setText(f"Viewing: {date_label} (historical)")
+        self.back_to_today_button.setVisible(True)
+        self.history_detail_box.setVisible(True)
+
+        roi_percent = (trading_day.snapshot_roi or 0) * 100
+
+        self.history_detail_stats_label.setText(
+            f"PROFIT: {trading_day.snapshot_realized_profit:+,}c   "
+            f"% RETURN: {roi_percent:+.1f}%   "
+            f"REVENUE: {trading_day.snapshot_revenue:,}c\n"
+            f"INVENTORY VALUE: "
+            f"{trading_day.snapshot_inventory_value:,}c   "
+            f"GOLD SPENT: {trading_day.snapshot_gold_spent:,}   "
+            f"AVG PROFIT/TRADE: "
+            f"{trading_day.snapshot_average_profit_per_trade:+,.0f}c"
+        )
+        self.history_detail_counts_label.setText(
+            f"New Trades: {trading_day.snapshot_new_trades}   "
+            f"Carry-over Sales: {trading_day.snapshot_carryover_sales}   "
+            f"Completed Trades: {trading_day.snapshot_completed_trades}"
+        )
+
 
 # =============================================================
 # SETTINGS PAGE
@@ -1677,10 +2676,15 @@ class AnalyticsPage(QWidget):
 
 class SettingsPage(QWidget):
 
-    def __init__(self, trade_service, on_settings_changed, parent=None):
+    def __init__(
+        self, trade_service, asset_service, backup_manager,
+        on_settings_changed, parent=None
+    ):
         super().__init__(parent)
 
         self.trade_service = trade_service
+        self.asset_service = asset_service
+        self.backup_manager = backup_manager
         self.on_settings_changed = on_settings_changed
 
         outer_layout = QVBoxLayout(self)
@@ -1694,8 +2698,10 @@ class SettingsPage(QWidget):
         content_layout.setSpacing(20)
 
         content_layout.addWidget(self._build_general_section())
+        content_layout.addWidget(self._build_league_section())
         content_layout.addWidget(self._build_trading_day_section())
         content_layout.addWidget(self._build_rates_section())
+        content_layout.addWidget(self._build_backups_section())
         content_layout.addWidget(self._build_assets_section())
         content_layout.addWidget(self._build_appearance_section())
         content_layout.addStretch()
@@ -1785,6 +2791,61 @@ class SettingsPage(QWidget):
         )
 
     # -----------------------------------------------------
+    # LEAGUE
+    # -----------------------------------------------------
+
+    def _build_league_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("LEAGUE")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        self.current_league_label = QLabel("")
+        self.current_league_label.setObjectName("tradeInfo")
+        layout.addWidget(self.current_league_label)
+
+        switch_row = QHBoxLayout()
+
+        self.league_select_input = QComboBox()
+        self.league_select_input.addItems(
+            available_league_names(self.trade_service, self.asset_service)
+        )
+        self.league_select_input.setCurrentText(
+            self.trade_service.league.name
+        )
+        switch_row.addWidget(self.league_select_input)
+
+        switch_button = QPushButton("SWITCH")
+        switch_button.setObjectName("secondaryButton")
+        switch_button.clicked.connect(self._switch_league)
+        switch_row.addWidget(switch_button)
+
+        layout.addLayout(switch_row)
+
+        note = QLabel(
+            "Switching leagues keeps every league's trades and "
+            "history completely separate."
+        )
+        note.setObjectName("tradeInfo")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+
+        return section
+
+    def _switch_league(self):
+        league_name = self.league_select_input.currentText().strip()
+
+        if not league_name:
+            return
+
+        self.trade_service.switch_league(league_name)
+        self.asset_service.refresh_catalog(league_name)
+        self.refresh()
+        self.on_settings_changed()
+
+    # -----------------------------------------------------
     # TRADING DAY
     # -----------------------------------------------------
 
@@ -1853,32 +2914,8 @@ class SettingsPage(QWidget):
 
         layout.addLayout(divine_row)
 
-        self.gold_current_label = QLabel("")
-        self.gold_current_label.setObjectName("tradeInfo")
-        layout.addWidget(self.gold_current_label)
-
-        gold_row = QHBoxLayout()
-
-        self.gold_amount_input = QSpinBox()
-        self.gold_amount_input.setRange(1, 100_000_000)
-
-        self.gold_chaos_input = QSpinBox()
-        self.gold_chaos_input.setRange(1, 10_000_000)
-
-        update_gold_button = QPushButton("UPDATE")
-        update_gold_button.setObjectName("secondaryButton")
-        update_gold_button.clicked.connect(self._update_gold_rate)
-
-        gold_row.addWidget(self.gold_amount_input)
-        gold_row.addWidget(QLabel("Gold ="))
-        gold_row.addWidget(self.gold_chaos_input)
-        gold_row.addWidget(QLabel("Chaos"))
-        gold_row.addWidget(update_gold_button)
-
-        layout.addLayout(gold_row)
-
         note = QLabel(
-            "Changing a rate does not affect past transactions — "
+            "Changing the rate does not affect past transactions — "
             "each transaction keeps the rate that was active when "
             "it was made."
         )
@@ -1892,13 +2929,97 @@ class SettingsPage(QWidget):
         self.refresh()
         self.on_settings_changed()
 
-    def _update_gold_rate(self):
-        self.trade_service.set_gold_rate(
-            self.gold_amount_input.value(),
-            self.gold_chaos_input.value()
+    # -----------------------------------------------------
+    # BACKUPS
+    # -----------------------------------------------------
+
+    def _build_backups_section(self):
+        section = QWidget()
+        layout = QVBoxLayout(section)
+
+        title = QLabel("BACKUPS")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        self.last_backup_label = QLabel("")
+        self.last_backup_label.setObjectName("tradeInfo")
+        layout.addWidget(self.last_backup_label)
+
+        note = QLabel(
+            "One automatic backup is made per day on launch "
+            "(database copy + SQL dump). Backups older than 15 days "
+            "are pruned automatically."
         )
+        note.setObjectName("tradeInfo")
+        layout.addWidget(note)
+
+        backup_button = QPushButton("BACK UP NOW")
+        backup_button.setObjectName("secondaryButton")
+        backup_button.clicked.connect(self._backup_now)
+        layout.addWidget(backup_button)
+
+        restore_title = QLabel("RESTORE FROM BACKUP")
+        restore_title.setObjectName("formLabel")
+        layout.addWidget(restore_title)
+
+        restore_row = QHBoxLayout()
+
+        self.restore_select_input = QComboBox()
+        restore_row.addWidget(self.restore_select_input)
+
+        restore_button = QPushButton("RESTORE")
+        restore_button.setObjectName("dangerButton")
+        restore_button.clicked.connect(self._restore_backup)
+        restore_row.addWidget(restore_button)
+
+        layout.addLayout(restore_row)
+
+        restore_note = QLabel(
+            "Overwrites all current data with the selected backup. "
+            "The app closes immediately after — relaunch it to see "
+            "the restored data."
+        )
+        restore_note.setObjectName("tradeInfo")
+        restore_note.setWordWrap(True)
+        layout.addWidget(restore_note)
+
+        return section
+
+    def _backup_now(self):
+        self.backup_manager.create_backup()
         self.refresh()
-        self.on_settings_changed()
+
+    def _restore_backup(self):
+        index = self.restore_select_input.currentIndex()
+
+        if index < 0:
+            return
+
+        backup_path = self.restore_select_input.itemData(index)
+
+        confirm = QMessageBox.warning(
+            self,
+            "Restore backup",
+            "This will overwrite ALL current data with the selected "
+            "backup and immediately close the app. This cannot be "
+            "undone. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+
+        self.backup_manager.restore_backup(backup_path)
+
+        QMessageBox.information(
+            self,
+            "Restore complete",
+            "The backup has been restored. The app will now close — "
+            "relaunch it to see the restored data."
+        )
+
+        QApplication.instance().quit()
 
     # -----------------------------------------------------
     # ASSETS / CACHE MANAGEMENT
@@ -1912,14 +3033,57 @@ class SettingsPage(QWidget):
         title.setObjectName("sectionTitle")
         layout.addWidget(title)
 
-        layout.addWidget(
-            build_empty_state(
-                "Not built yet — the asset/cache system is a "
-                "later build step."
-            )
+        self.catalog_status_label = QLabel("")
+        self.catalog_status_label.setObjectName("tradeInfo")
+        layout.addWidget(self.catalog_status_label)
+
+        button_row = QHBoxLayout()
+
+        refresh_button = QPushButton("REFRESH CACHE")
+        refresh_button.setObjectName("secondaryButton")
+        refresh_button.clicked.connect(self._refresh_cache)
+        button_row.addWidget(refresh_button)
+
+        rebuild_button = QPushButton("REBUILD CACHE")
+        rebuild_button.setObjectName("dangerButton")
+        rebuild_button.clicked.connect(self._rebuild_cache)
+        button_row.addWidget(rebuild_button)
+
+        layout.addLayout(button_row)
+
+        note = QLabel(
+            "Refresh picks up new/changed items from poe.ninja. "
+            "Rebuild wipes every cached icon and re-downloads "
+            "everything from scratch — only needed if images look "
+            "wrong or missing."
         )
+        note.setObjectName("tradeInfo")
+        note.setWordWrap(True)
+        layout.addWidget(note)
 
         return section
+
+    def _refresh_cache(self):
+        self.asset_service.refresh_catalog(self.trade_service.league.name)
+        self.refresh()
+        self.on_settings_changed()
+
+    def _rebuild_cache(self):
+        confirm = QMessageBox.question(
+            self,
+            "Rebuild cache",
+            "This deletes every cached item icon and re-downloads "
+            "them all from scratch. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+
+        self.asset_service.rebuild_image_cache(self.trade_service.league.name)
+        self.refresh()
+        self.on_settings_changed()
 
     # -----------------------------------------------------
     # APPEARANCE
@@ -1947,6 +3111,10 @@ class SettingsPage(QWidget):
     # -----------------------------------------------------
 
     def refresh(self):
+        self.current_league_label.setText(
+            f"Current league: {self.trade_service.league.name}"
+        )
+
         self.trading_day_label.setText(
             f"Current Trading Day started: "
             f"{self.trade_service.trading_day.started_at}"
@@ -1957,16 +3125,27 @@ class SettingsPage(QWidget):
         )
         self.divine_rate_input.setValue(self.trade_service.divine_rate)
 
-        self.gold_current_label.setText(
-            f"Current: "
-            f"{self.trade_service.gold_rate_gold_amount:,} Gold = "
-            f"{self.trade_service.gold_rate_chaos_value}c"
-        )
-        self.gold_amount_input.setValue(
-            self.trade_service.gold_rate_gold_amount
-        )
-        self.gold_chaos_input.setValue(
-            self.trade_service.gold_rate_chaos_value
+        last_backup = self.backup_manager.last_backup_at()
+
+        if last_backup is None:
+            self.last_backup_label.setText("Last backup: never")
+        else:
+            self.last_backup_label.setText(
+                f"Last backup: "
+                f"{last_backup.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
+        self.restore_select_input.clear()
+
+        for path, timestamp in self.backup_manager.list_backups():
+            self.restore_select_input.addItem(
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"), userData=path
+            )
+
+        catalog_size = len(self.asset_service.active_assets())
+        self.catalog_status_label.setText(
+            f"Catalog: {catalog_size} items cached for "
+            f"{self.trade_service.league.name}"
         )
 
 
@@ -1983,17 +3162,41 @@ class SettingsPage(QWidget):
 
 class StartupDialog(QDialog):
 
-    def __init__(self, default_rate, parent=None):
+    def __init__(
+        self,
+        default_rate,
+        trading_day_started_at,
+        current_league,
+        league_choices,
+        display_font=None,
+        parent=None
+    ):
         super().__init__(parent)
 
         self.setWindowTitle("Divine Rate")
         self.setModal(True)
         self._confirmed = False
         self.chosen_rate = default_rate
+        self.chosen_league = current_league
+        self.new_day_chosen = False
+        self.display_font = display_font or DISPLAY_FONT_FALLBACK
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(30, 25, 30, 25)
         layout.setSpacing(15)
+
+        league_title = QLabel("LEAGUE")
+        league_title.setObjectName("sectionTitle")
+        layout.addWidget(league_title)
+
+        self.league_input = QComboBox()
+
+        if current_league not in league_choices:
+            league_choices = [current_league] + list(league_choices)
+
+        self.league_input.addItems(league_choices)
+        self.league_input.setCurrentText(current_league)
+        layout.addWidget(self.league_input)
 
         title = QLabel("DIVINE RATE")
         title.setObjectName("sectionTitle")
@@ -2007,14 +3210,45 @@ class StartupDialog(QDialog):
         self.rate_input.setValue(default_rate)
         layout.addWidget(self.rate_input)
 
+        day_title = QLabel("TRADING DAY")
+        day_title.setObjectName("sectionTitle")
+        layout.addWidget(day_title)
+
+        day_status = QLabel(f"Current day started: {trading_day_started_at}")
+        layout.addWidget(day_status)
+
+        day_row = QHBoxLayout()
+
+        self.continue_button = QPushButton("CONTINUE")
+        self.continue_button.setObjectName("dayToggle")
+        self.continue_button.setCheckable(True)
+        self.continue_button.setChecked(True)
+
+        self.new_day_button = QPushButton("NEW DAY")
+        self.new_day_button.setObjectName("dayToggle")
+        self.new_day_button.setCheckable(True)
+
+        self._day_group = QButtonGroup(self)
+        self._day_group.setExclusive(True)
+        self._day_group.addButton(self.continue_button)
+        self._day_group.addButton(self.new_day_button)
+
+        day_row.addWidget(self.continue_button)
+        day_row.addWidget(self.new_day_button)
+        layout.addLayout(day_row)
+
         confirm_button = QPushButton("CONFIRM")
         confirm_button.setObjectName("primaryButton")
         confirm_button.clicked.connect(self._confirm)
         layout.addWidget(confirm_button)
 
-        self.setStyleSheet("""
+        stylesheet = """
             QDialog {
-                background: #14141f;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #17152a, stop:1 #100e1c
+                );
+                border: 1px solid #5a4fc8;
             }
 
             QLabel {
@@ -2023,15 +3257,17 @@ class StartupDialog(QDialog):
             }
 
             #sectionTitle {
-                font-size: 18px;
+                font-family: __DISPLAY_FONT__;
+                font-size: 19px;
                 font-weight: bold;
-                color: #d8d8ff;
+                color: #c7bdff;
+                letter-spacing: 1px;
             }
 
             QSpinBox {
                 color: #eeeeff;
-                background: #181824;
-                border: 1px solid #303044;
+                background: #181828;
+                border: 1px solid #35304f;
                 border-radius: 5px;
                 padding: 6px;
                 font-size: 13px;
@@ -2039,21 +3275,51 @@ class StartupDialog(QDialog):
 
             QPushButton#primaryButton {
                 color: #0b0b12;
-                background: #a8a8ff;
-                border: 1px solid #a8a8ff;
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #b0a4ff, stop:1 #9a8bff
+                );
+                border: 1px solid #9a8bff;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
+                letter-spacing: 1px;
                 padding: 10px 20px;
             }
 
             QPushButton#primaryButton:hover {
-                background: #c0c0ff;
+                background: #c4baff;
             }
-        """)
+
+            QPushButton#dayToggle {
+                color: #a8a4c8;
+                background: #181828;
+                border: 1px solid #35304f;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 8px 16px;
+            }
+
+            QPushButton#dayToggle:hover {
+                border: 1px solid #6a5fd8;
+            }
+
+            QPushButton#dayToggle:checked {
+                color: #f0ecff;
+                background: #2a2650;
+                border: 1px solid #9a8bff;
+            }
+        """
+
+        self.setStyleSheet(
+            stylesheet.replace("__DISPLAY_FONT__", self.display_font)
+        )
 
     def _confirm(self):
         self.chosen_rate = self.rate_input.value()
+        self.chosen_league = self.league_input.currentText().strip()
+        self.new_day_chosen = self.new_day_button.isChecked()
         self._confirmed = True
         self.accept()
 
@@ -2066,9 +3332,12 @@ class StartupDialog(QDialog):
 
 def main():
 
+    run_migrations()
+
     app = QApplication(sys.argv)
 
     window = GalaxyHideout()
+    window.show()
 
     # Prefer the live poe.ninja rate fetched during catalog refresh
     # (still just a pre-fill — the user can override it, Q26); fall
@@ -2078,13 +3347,30 @@ def main():
     else:
         default_rate = window.trade_service.divine_rate
 
-    startup_dialog = StartupDialog(default_rate=default_rate)
+    league_choices = available_league_names(
+        window.trade_service, window.asset_service
+    )
+
+    startup_dialog = StartupDialog(
+        default_rate=default_rate,
+        trading_day_started_at=window.trade_service.trading_day.started_at,
+        current_league=window.trade_service.league.name,
+        league_choices=league_choices,
+        display_font=window.display_font,
+        parent=window
+    )
     startup_dialog.exec()
 
-    window.trade_service.set_divine_rate(startup_dialog.chosen_rate)
-    window.refresh_all()
+    if startup_dialog.chosen_league != window.trade_service.league.name:
+        window.trade_service.switch_league(startup_dialog.chosen_league)
+        window.asset_service.refresh_catalog(startup_dialog.chosen_league)
 
-    window.show()
+    window.trade_service.set_divine_rate(startup_dialog.chosen_rate)
+
+    if startup_dialog.new_day_chosen:
+        window.trade_service.start_new_trading_day()
+
+    window.refresh_all()
 
     sys.exit(
         app.exec()

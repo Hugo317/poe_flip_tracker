@@ -44,6 +44,30 @@ class TradingDay(Base):
     started_at: Mapped[str] = mapped_column(default=_now)
     closed_at: Mapped[str | None] = mapped_column(default=None)
 
+    # Frozen at close time (directive 17) — Trading Day History reads
+    # these directly rather than recomputing from live trade data, so
+    # a closed day's numbers never shift under a future accounting
+    # change. Null while the day is still open.
+    snapshot_new_trades: Mapped[int | None] = mapped_column(default=None)
+    snapshot_carryover_sales: Mapped[int | None] = mapped_column(
+        default=None
+    )
+    snapshot_realized_profit: Mapped[int | None] = mapped_column(
+        default=None
+    )
+    snapshot_roi: Mapped[float | None] = mapped_column(default=None)
+    snapshot_revenue: Mapped[int | None] = mapped_column(default=None)
+    snapshot_inventory_value: Mapped[int | None] = mapped_column(
+        default=None
+    )
+    snapshot_gold_spent: Mapped[int | None] = mapped_column(default=None)
+    snapshot_average_profit_per_trade: Mapped[float | None] = (
+        mapped_column(default=None)
+    )
+    snapshot_completed_trades: Mapped[int | None] = mapped_column(
+        default=None
+    )
+
 
 class Asset(Base):
     """The tradeable-item catalog, refreshed from the configured
@@ -197,3 +221,8 @@ class GlobalSettings(Base):
     # Hugo's request; directive 28/37.12 anticipated this.
     sound_tier_small_max: Mapped[int] = mapped_column(default=200)
     sound_tier_medium_max: Mapped[int] = mapped_column(default=800)
+
+    # Directive Q8: the active league is asked at every startup
+    # (pre-filled with the last choice) and switchable from Settings.
+    # Null on a fresh install, before any league has ever been chosen.
+    active_league_name: Mapped[str | None] = mapped_column(default=None)

@@ -1,4 +1,5 @@
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -6,6 +7,12 @@ import urllib.request
 BASE_URL = "https://poe.ninja"
 REQUEST_TIMEOUT_SECONDS = 10
 USER_AGENT = "DivineFlipper/1.0"
+
+# Directive Q31: never hit the API more often than necessary, and
+# back off instead of hammering it on transient failures.
+MIN_REQUEST_INTERVAL_SECONDS = 1.0
+MAX_ATTEMPTS = 3
+BACKOFF_BASE_SECONDS = 1.0
 
 
 class PoeNinjaUnavailable(Exception):
@@ -30,6 +37,9 @@ class PoeNinjaProvider:
     `tradeId`, which ~30% of entries don't even have), so items and
     prices are joined by name instead, which is consistent across both.
     """
+
+    def __init__(self):
+        self._last_request_at = 0.0
 
     def get_leagues(self):
         data = self._get_json(f"{BASE_URL}/poe1/api/economy/leagues")
@@ -82,29 +92,59 @@ class PoeNinjaProvider:
         }
 
     def download_image(self, url):
-        try:
-            request = urllib.request.Request(
-                url, headers={"User-Agent": USER_AGENT}
-            )
-
-            with urllib.request.urlopen(
-                request, timeout=REQUEST_TIMEOUT_SECONDS
-            ) as response:
-                return response.read()
-
-        except (urllib.error.URLError, OSError) as error:
-            raise PoeNinjaUnavailable(str(error)) from error
+        # Icons are served from the PoE CDN, not poe.ninja's API —
+        # a different host/service, so the economy-API throttle
+        # (Q31) doesn't apply here. A fresh catalog can need ~290 of
+        # these; throttling them too would make first launch take
+        # minutes for no benefit.
+        return self._fetch(url, throttle=False)
 
     def _get_json(self, url):
         try:
-            request = urllib.request.Request(
-                url, headers={"User-Agent": USER_AGENT}
-            )
-
-            with urllib.request.urlopen(
-                request, timeout=REQUEST_TIMEOUT_SECONDS
-            ) as response:
-                return json.loads(response.read())
-
-        except (urllib.error.URLError, OSError, json.JSONDecodeError) as error:
+            return json.loads(self._fetch(url, throttle=True))
+        except json.JSONDecodeError as error:
             raise PoeNinjaUnavailable(str(error)) from error
+
+    def _throttle(self):
+        elapsed = time.monotonic() - self._last_request_at
+        wait = MIN_REQUEST_INTERVAL_SECONDS - elapsed
+
+        if wait > 0:
+            time.sleep(wait)
+
+        self._last_request_at = time.monotonic()
+
+    def _fetch(self, url, throttle):
+        """Single GET with retry/backoff on transient failures
+        (connection errors, 429, 5xx). A non-transient HTTP error
+        (e.g. 404) fails immediately — retrying won't help."""
+
+        last_error = None
+
+        for attempt in range(MAX_ATTEMPTS):
+            if throttle:
+                self._throttle()
+
+            try:
+                request = urllib.request.Request(
+                    url, headers={"User-Agent": USER_AGENT}
+                )
+
+                with urllib.request.urlopen(
+                    request, timeout=REQUEST_TIMEOUT_SECONDS
+                ) as response:
+                    return response.read()
+
+            except urllib.error.HTTPError as error:
+                last_error = error
+
+                if error.code != 429 and error.code < 500:
+                    raise PoeNinjaUnavailable(str(error)) from error
+
+            except (urllib.error.URLError, OSError) as error:
+                last_error = error
+
+            if attempt < MAX_ATTEMPTS - 1:
+                time.sleep(BACKOFF_BASE_SECONDS * (2 ** attempt))
+
+        raise PoeNinjaUnavailable(str(last_error))
