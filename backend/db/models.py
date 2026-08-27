@@ -45,6 +45,36 @@ class TradingDay(Base):
     closed_at: Mapped[str | None] = mapped_column(default=None)
 
 
+class Asset(Base):
+    """The tradeable-item catalog, refreshed from the configured
+    provider (poe.ninja for V1 — directive 36.5/36.6). Never deleted:
+    an item that drops out of the live catalog is marked inactive so
+    historical Trades that reference it keep resolving correctly."""
+
+    __tablename__ = "assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # The provider's own stable id (e.g. poe.ninja's "divine") — used
+    # as the cache key for the downloaded icon file, per directive
+    # 36.7 ("prefer stable asset/item identifiers for cache keys").
+    external_id: Mapped[str] = mapped_column(unique=True)
+
+    name: Mapped[str]
+    category: Mapped[str]
+
+    # Full remote CDN URL. The UI never depends on this directly
+    # (directive 36.7) — it's only used to (re)populate icon_path.
+    icon_url: Mapped[str | None] = mapped_column(default=None)
+
+    # Relative path within the local image cache directory, e.g.
+    # "divine.png" — never an absolute, machine-specific path.
+    icon_path: Mapped[str | None] = mapped_column(default=None)
+
+    is_active: Mapped[bool] = mapped_column(default=True)
+    last_seen_at: Mapped[str] = mapped_column(default=_now)
+
+
 class Trade(Base):
     __tablename__ = "trades"
 
@@ -56,6 +86,17 @@ class Trade(Base):
     # a trade can stay open across day boundaries.
     trading_day_id: Mapped[int] = mapped_column(
         ForeignKey("trading_days.id")
+    )
+
+    # Nullable: a trade can in principle be opened for an item outside
+    # the current catalog (e.g. entered while the catalog fetch failed
+    # offline). item_name is a permanent snapshot either way, so
+    # historical display never depends on asset_id still resolving —
+    # per directive 25.1/36.6, an asset going inactive (or, in the
+    # offline edge case, never having existed) must never break a past
+    # trade's display.
+    asset_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assets.id"), default=None
     )
 
     item_name: Mapped[str]

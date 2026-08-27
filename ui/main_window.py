@@ -21,8 +21,10 @@ from PySide6.QtWidgets import (
     QCheckBox,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPixmap
 
 from backend.trades import TradeService
+from backend.assets_service import AssetService
 
 
 SIDEBAR_SECTIONS = [
@@ -36,17 +38,6 @@ SIDEBAR_SECTIONS = [
 # Overlay covers this fraction of the content area, centered,
 # leaving a Hideout border visible around it.
 OVERLAY_SIZE_RATIO = 0.90
-
-# Temporary UI-level item list. This will be replaced by the
-# downloaded asset catalog later; the combo box stays editable
-# so a name outside this list can still be entered.
-ITEM_CATALOG = [
-    "Reflecting Mist",
-    "Divine Orb",
-    "Exalted Orb",
-    "Scarab of Awakening",
-    "Chaos Orb",
-]
 
 
 def clear_layout(layout):
@@ -146,6 +137,15 @@ class GalaxyHideout(QMainWindow):
         self.setMinimumSize(1000, 650)
 
         self.trade_service = TradeService()
+        self.asset_service = AssetService(session=self.trade_service.session)
+
+        # Catalog refresh at startup (directive Q34) — also gives us
+        # the live Divine rate for free, or None if unreachable, in
+        # which case we simply carry on with whatever's cached
+        # (directive Q28/36.9: never require internet for core use).
+        self.live_divine_rate = self.asset_service.refresh_catalog(
+            self.trade_service.league.name
+        )
 
         self._build_ui()
         self.refresh_all()
@@ -172,6 +172,7 @@ class GalaxyHideout(QMainWindow):
 
         self.overlay = OverlayPanel(
             trade_service=self.trade_service,
+            asset_service=self.asset_service,
             on_trade_changed=self.refresh_all,
             on_close=self._close_overlay
         )
@@ -723,7 +724,14 @@ class ContentArea(QWidget):
 
 class OverlayPanel(QFrame):
 
-    def __init__(self, trade_service, on_trade_changed, on_close, parent=None):
+    def __init__(
+        self,
+        trade_service,
+        asset_service,
+        on_trade_changed,
+        on_close,
+        parent=None
+    ):
         super().__init__(parent)
 
         self.setObjectName("overlayPanel")
@@ -757,7 +765,9 @@ class OverlayPanel(QFrame):
 
         self._pages = {}
 
-        self.faustus_page = FaustusPage(trade_service, on_trade_changed)
+        self.faustus_page = FaustusPage(
+            trade_service, asset_service, on_trade_changed
+        )
         self._pages["FAUSTUS"] = self.faustus_page
         self.stack.addWidget(self.faustus_page)
 
@@ -829,10 +839,11 @@ class OverlayPanel(QFrame):
 
 class FaustusPage(QWidget):
 
-    def __init__(self, trade_service, on_trade_changed, parent=None):
+    def __init__(self, trade_service, asset_service, on_trade_changed, parent=None):
         super().__init__(parent)
 
         self.trade_service = trade_service
+        self.asset_service = asset_service
         self.on_trade_changed = on_trade_changed
 
         layout = QVBoxLayout(self)
@@ -916,8 +927,7 @@ class FaustusPage(QWidget):
         form.setSpacing(10)
 
         self.item_input = QComboBox()
-        self.item_input.setEditable(True)
-        self.item_input.addItems(ITEM_CATALOG)
+        self._populate_item_input()
 
         self.quantity_input = QSpinBox()
         self.quantity_input.setRange(1, 100_000)
@@ -950,6 +960,16 @@ class FaustusPage(QWidget):
 
         return form_page
 
+    def _populate_item_input(self):
+        # Sourced entirely from the live poe.ninja catalog (Hugo's
+        # call) — no free-text/custom entries, so item_input is a
+        # picker, not an editable combo box.
+        for asset in self.asset_service.active_assets():
+            icon_path = self.asset_service.icon_file_path(asset)
+            icon = QIcon(QPixmap(str(icon_path))) if icon_path else QIcon()
+
+            self.item_input.addItem(icon, asset.name, userData=asset.id)
+
     def _build_buy_confirm(self):
 
         confirm_page = QWidget()
@@ -980,11 +1000,12 @@ class FaustusPage(QWidget):
 
     def _show_buy_confirm(self):
 
-        item_name = self.item_input.currentText().strip()
+        asset_id = self.item_input.currentData()
 
-        if not item_name:
+        if asset_id is None:
             return
 
+        item_name = self.item_input.currentText()
         quantity = self.quantity_input.value()
         currency = self.currency_input.currentText()
         price = self.price_input.value()
@@ -1021,7 +1042,12 @@ class FaustusPage(QWidget):
 
     def _confirm_buy(self):
 
-        item_name = self.item_input.currentText().strip()
+        asset_id = self.item_input.currentData()
+
+        if asset_id is None:
+            return
+
+        item_name = self.item_input.currentText()
         quantity = self.quantity_input.value()
         currency = self.currency_input.currentText()
         price = self.price_input.value()
@@ -1032,7 +1058,8 @@ class FaustusPage(QWidget):
             quantity=quantity,
             currency=currency,
             entered_price=price,
-            gold_spent=gold
+            gold_spent=gold,
+            asset_id=asset_id
         )
 
         self._reset_buy_form()
@@ -2000,9 +2027,15 @@ def main():
 
     window = GalaxyHideout()
 
-    startup_dialog = StartupDialog(
-        default_rate=window.trade_service.divine_rate
-    )
+    # Prefer the live poe.ninja rate fetched during catalog refresh
+    # (still just a pre-fill — the user can override it, Q26); fall
+    # back to the last persisted rate if that fetch was unreachable.
+    if window.live_divine_rate is not None:
+        default_rate = round(window.live_divine_rate)
+    else:
+        default_rate = window.trade_service.divine_rate
+
+    startup_dialog = StartupDialog(default_rate=default_rate)
     startup_dialog.exec()
 
     window.trade_service.set_divine_rate(startup_dialog.chosen_rate)
