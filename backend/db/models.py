@@ -190,3 +190,10 @@ class GlobalSettings(Base):
     sound_master_volume: Mapped[int] = mapped_column(default=100)
     sound_tink_enabled: Mapped[bool] = mapped_column(default=True)
     sound_warnings_enabled: Mapped[bool] = mapped_column(default=True)
+
+    # TINK tier boundaries (chaos profit). Below tier_small_max is a
+    # small TINK, below tier_medium_max a medium one, at/above it a
+    # large one — see backend/sound_rules.py. User-adjustable per
+    # Hugo's request; directive 28/37.12 anticipated this.
+    sound_tier_small_max: Mapped[int] = mapped_column(default=200)
+    sound_tier_medium_max: Mapped[int] = mapped_column(default=800)

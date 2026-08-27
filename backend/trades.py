@@ -163,8 +163,6 @@ class TradeService:
     # ---------------------------------------------------------------
     # GENERAL (SOUND PREFERENCES)
     # ---------------------------------------------------------------
-    # Preferences only — no sound actually plays yet (that's a later
-    # build step), but the controls Q49 locked in are real and persist.
 
     @property
     def sound_master_volume(self):
@@ -178,6 +176,14 @@ class TradeService:
     def sound_warnings_enabled(self):
         return self._settings_row.sound_warnings_enabled
 
+    @property
+    def sound_tier_small_max(self):
+        return self._settings_row.sound_tier_small_max
+
+    @property
+    def sound_tier_medium_max(self):
+        return self._settings_row.sound_tier_medium_max
+
     def set_sound_master_volume(self, value):
         self._settings_row.sound_master_volume = value
         self.session.commit()
@@ -188,6 +194,11 @@ class TradeService:
 
     def set_sound_warnings_enabled(self, enabled):
         self._settings_row.sound_warnings_enabled = enabled
+        self.session.commit()
+
+    def set_sound_tier_thresholds(self, small_max, medium_max):
+        self._settings_row.sound_tier_small_max = small_max
+        self._settings_row.sound_tier_medium_max = medium_max
         self.session.commit()
 
     # ---------------------------------------------------------------
