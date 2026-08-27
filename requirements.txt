@@ -1,0 +1,7 @@
+# PySide6 6.11.x crashes on launch on this machine (Python 3.14 / macOS) —
+# QApplication() aborts inside Qt's platform-plugin loader. 6.10.1 is confirmed working.
+#
+# IMPORTANT: install this into a venv OUTSIDE ~/Documents (see README.md) —
+# Qt's plugin directory scan silently finds nothing when run from inside a
+# TCC-protected folder, regardless of PySide6 version.
+PySide6==6.10.1
