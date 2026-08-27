@@ -85,13 +85,26 @@ class TradeService:
         # instead, since two events can share the same clock second.
         self._next_sequence_number = 1
 
-        # Placeholders until the full Rates/Settings step exists;
-        # divine_rate is persisted (see SETTINGS_FILE) so it survives
-        # restarts even before that.
+        # Rates and General sound preferences are persisted (see
+        # SETTINGS_FILE) so they survive restarts even before the full
+        # SQLite backend exists.
         settings = _load_settings()
         self.divine_rate = settings.get("divine_rate", 200)
-        self.gold_rate_gold_amount = 1_000_000
-        self.gold_rate_chaos_value = 200
+        self.gold_rate_gold_amount = settings.get(
+            "gold_rate_gold_amount", 1_000_000
+        )
+        self.gold_rate_chaos_value = settings.get(
+            "gold_rate_chaos_value", 200
+        )
+        self.sound_master_volume = settings.get(
+            "sound_master_volume", 100
+        )
+        self.sound_tink_enabled = settings.get(
+            "sound_tink_enabled", True
+        )
+        self.sound_warnings_enabled = settings.get(
+            "sound_warnings_enabled", True
+        )
 
         # Trading Day: user-controlled, never auto-rolls. Until real
         # persistence exists (a later build step), a "day" only lasts
@@ -114,11 +127,23 @@ class TradeService:
     # RATES
     # ---------------------------------------------------------------
 
+    @staticmethod
+    def _persist(key, value):
+        settings = _load_settings()
+        settings[key] = value
+        _save_settings(settings)
+
     def set_divine_rate(self, chaos_value):
         self.divine_rate = chaos_value
+        self._persist("divine_rate", chaos_value)
+
+    def set_gold_rate(self, gold_amount, chaos_value):
+        self.gold_rate_gold_amount = gold_amount
+        self.gold_rate_chaos_value = chaos_value
 
         settings = _load_settings()
-        settings["divine_rate"] = chaos_value
+        settings["gold_rate_gold_amount"] = gold_amount
+        settings["gold_rate_chaos_value"] = chaos_value
         _save_settings(settings)
 
     def divine_to_chaos(self, divine_amount):
@@ -132,6 +157,24 @@ class TradeService:
             gold_amount * self.gold_rate_chaos_value
             // self.gold_rate_gold_amount
         )
+
+    # ---------------------------------------------------------------
+    # GENERAL (SOUND PREFERENCES)
+    # ---------------------------------------------------------------
+    # Preferences only — no sound actually plays yet (that's a later
+    # build step), but the controls Q49 locked in are real and persist.
+
+    def set_sound_master_volume(self, value):
+        self.sound_master_volume = value
+        self._persist("sound_master_volume", value)
+
+    def set_sound_tink_enabled(self, enabled):
+        self.sound_tink_enabled = enabled
+        self._persist("sound_tink_enabled", enabled)
+
+    def set_sound_warnings_enabled(self, enabled):
+        self.sound_warnings_enabled = enabled
+        self._persist("sound_warnings_enabled", enabled)
 
     # ---------------------------------------------------------------
     # BUY
@@ -358,3 +401,128 @@ class TradeService:
             })
 
         return activity
+
+    # ---------------------------------------------------------------
+    # ANALYTICS
+    # ---------------------------------------------------------------
+
+    def analytics_summary(self):
+        """Everything the Analytics overlay needs for the current
+        Trading Day, in one call. ROI and New Trades vs Carry-over
+        Sales follow the locked accounting rules (directive Q18/19):
+        a partially-sold new trade contributes only the sold portion,
+        and Gold is never mixed into trading profit/ROI."""
+
+        boundary = self.trading_day_start_sequence
+
+        new_trades_today = [
+            trade for trade in self.trades
+            if trade.sequence >= boundary
+        ]
+        new_trade_ids = {trade.id for trade in new_trades_today}
+
+        today_sells = []
+
+        for trade in self.trades:
+            for sell in trade.sells:
+                if sell["sequence"] >= boundary:
+                    today_sells.append((trade, sell))
+
+        new_trade_sales = [
+            (trade, sell) for trade, sell in today_sells
+            if trade.id in new_trade_ids
+        ]
+        carryover_sales = [
+            (trade, sell) for trade, sell in today_sells
+            if trade.id not in new_trade_ids
+        ]
+
+        today_revenue = sum(
+            sell["total_chaos"] for _, sell in today_sells
+        )
+        today_cost = sum(
+            sell["cost_chaos"] for _, sell in today_sells
+        )
+        today_profit = sum(
+            sell["profit"] for _, sell in today_sells
+        )
+
+        today_buys_volume = sum(
+            trade.invested_chaos for trade in new_trades_today
+        )
+        trading_volume_chaos = today_revenue + today_buys_volume
+        transaction_count_today = (
+            len(new_trades_today) + len(today_sells)
+        )
+
+        roi = (today_profit / today_cost) if today_cost else 0
+
+        closed_today_trades = [
+            trade for trade in self.trades
+            if not trade.is_open
+            and any(
+                sell["sequence"] >= boundary for sell in trade.sells
+            )
+        ]
+        completed_trades_today = len(closed_today_trades)
+        average_profit_per_trade = (
+            sum(trade.realized_profit for trade in closed_today_trades)
+            / completed_trades_today
+            if completed_trades_today else 0
+        )
+
+        gold_spent_today = sum(
+            trade.gold_spent for trade in new_trades_today
+        )
+        gold_received_today = sum(
+            sell["gold_received"] for _, sell in today_sells
+        )
+
+        item_performance = {}
+
+        for trade, sell in today_sells:
+            entry = item_performance.setdefault(
+                trade.item_name,
+                {
+                    "item_name": trade.item_name,
+                    "quantity_sold": 0,
+                    "revenue": 0,
+                    "cost": 0,
+                    "profit": 0
+                }
+            )
+
+            entry["quantity_sold"] += sell["quantity"]
+            entry["revenue"] += sell["total_chaos"]
+            entry["cost"] += sell["cost_chaos"]
+            entry["profit"] += sell["profit"]
+
+        item_performance_list = sorted(
+            item_performance.values(),
+            key=lambda entry: entry["profit"],
+            reverse=True
+        )
+
+        return {
+            "today_profit": today_profit,
+            "today_revenue": today_revenue,
+            "today_cost": today_cost,
+            "roi": roi,
+            "trading_volume_chaos": trading_volume_chaos,
+            "transaction_count_today": transaction_count_today,
+            "new_trades_count": len(new_trades_today),
+            "new_trade_sales_count": len(new_trade_sales),
+            "new_trade_sales_profit": sum(
+                sell["profit"] for _, sell in new_trade_sales
+            ),
+            "carryover_sales_count": len(carryover_sales),
+            "carryover_sales_profit": sum(
+                sell["profit"] for _, sell in carryover_sales
+            ),
+            "completed_trades_today": completed_trades_today,
+            "average_profit_per_trade": average_profit_per_trade,
+            "gold_spent_today": gold_spent_today,
+            "gold_received_today": gold_received_today,
+            "total_realized_profit": self.total_realized_profit(),
+            "item_performance": item_performance_list
+        }
