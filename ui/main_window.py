@@ -25,6 +25,7 @@ from PySide6.QtGui import QIcon, QPixmap
 
 from backend.trades import TradeService
 from backend.assets_service import AssetService
+from ui.sound_player import SoundPlayer
 
 
 SIDEBAR_SECTIONS = [
@@ -138,6 +139,7 @@ class GalaxyHideout(QMainWindow):
 
         self.trade_service = TradeService()
         self.asset_service = AssetService(session=self.trade_service.session)
+        self.sound_player = SoundPlayer(self.trade_service)
 
         # Catalog refresh at startup (directive Q34) — also gives us
         # the live Divine rate for free, or None if unreachable, in
@@ -173,6 +175,7 @@ class GalaxyHideout(QMainWindow):
         self.overlay = OverlayPanel(
             trade_service=self.trade_service,
             asset_service=self.asset_service,
+            sound_player=self.sound_player,
             on_trade_changed=self.refresh_all,
             on_close=self._close_overlay
         )
@@ -728,6 +731,7 @@ class OverlayPanel(QFrame):
         self,
         trade_service,
         asset_service,
+        sound_player,
         on_trade_changed,
         on_close,
         parent=None
@@ -766,7 +770,7 @@ class OverlayPanel(QFrame):
         self._pages = {}
 
         self.faustus_page = FaustusPage(
-            trade_service, asset_service, on_trade_changed
+            trade_service, asset_service, sound_player, on_trade_changed
         )
         self._pages["FAUSTUS"] = self.faustus_page
         self.stack.addWidget(self.faustus_page)
@@ -839,11 +843,19 @@ class OverlayPanel(QFrame):
 
 class FaustusPage(QWidget):
 
-    def __init__(self, trade_service, asset_service, on_trade_changed, parent=None):
+    def __init__(
+        self,
+        trade_service,
+        asset_service,
+        sound_player,
+        on_trade_changed,
+        parent=None
+    ):
         super().__init__(parent)
 
         self.trade_service = trade_service
         self.asset_service = asset_service
+        self.sound_player = sound_player
         self.on_trade_changed = on_trade_changed
 
         layout = QVBoxLayout(self)
@@ -1221,13 +1233,15 @@ class FaustusPage(QWidget):
         price = self.sell_price_input.value()
         gold = self.sell_gold_input.value()
 
-        self.trade_service.sell_from_trade(
+        sale = self.trade_service.sell_from_trade(
             trade_id=trade.id,
             quantity=quantity,
             currency=currency,
             entered_price=price,
             gold_received=gold
         )
+
+        self.sound_player.play_for_profit(sale.profit)
 
         self._active_trade = None
         self.top_stack.setCurrentIndex(2)
@@ -1730,16 +1744,45 @@ class SettingsPage(QWidget):
         )
         form.addRow("", self.warnings_checkbox)
 
+        self.tier_small_input = QSpinBox()
+        self.tier_small_input.setRange(1, 1_000_000)
+        self.tier_small_input.setValue(
+            self.trade_service.sound_tier_small_max
+        )
+        self.tier_small_input.valueChanged.connect(
+            self._update_sound_tiers
+        )
+        form.addRow("Small TINK up to (c)", self.tier_small_input)
+
+        self.tier_medium_input = QSpinBox()
+        self.tier_medium_input.setRange(1, 1_000_000)
+        self.tier_medium_input.setValue(
+            self.trade_service.sound_tier_medium_max
+        )
+        self.tier_medium_input.valueChanged.connect(
+            self._update_sound_tiers
+        )
+        form.addRow("Medium TINK up to (c)", self.tier_medium_input)
+
         layout.addLayout(form)
 
         note = QLabel(
-            "Sound playback isn't implemented yet — these "
-            "preferences are saved for when it is."
+            "A SELL's profit picks the TINK tier: below \"small\" is a "
+            "small TINK, below \"medium\" a bigger one, at/above it "
+            "the biggest. Any loss plays the warning sound instead; "
+            "exactly 0 profit is silent."
         )
         note.setObjectName("tradeInfo")
+        note.setWordWrap(True)
         layout.addWidget(note)
 
         return section
+
+    def _update_sound_tiers(self):
+        self.trade_service.set_sound_tier_thresholds(
+            self.tier_small_input.value(),
+            self.tier_medium_input.value()
+        )
 
     # -----------------------------------------------------
     # TRADING DAY
