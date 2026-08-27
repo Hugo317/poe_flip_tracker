@@ -7,11 +7,110 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QVBoxLayout,
     QGridLayout,
+    QFormLayout,
     QLabel,
     QFrame,
     QPushButton,
+    QButtonGroup,
+    QStackedWidget,
+    QComboBox,
+    QSpinBox,
 )
 from PySide6.QtCore import Qt
+
+from backend.trades import TradeService
+
+
+SIDEBAR_SECTIONS = [
+    "FAUSTUS",
+    "STASH",
+    "TRADES",
+    "ANALYTICS",
+    "SETTINGS",
+]
+
+# Overlay covers this fraction of the content area, centered,
+# leaving a Hideout border visible around it.
+OVERLAY_SIZE_RATIO = 0.90
+
+# Temporary UI-level item list. This will be replaced by the
+# downloaded asset catalog later; the combo box stays editable
+# so a name outside this list can still be entered.
+ITEM_CATALOG = [
+    "Reflecting Mist",
+    "Divine Orb",
+    "Exalted Orb",
+    "Scarab of Awakening",
+    "Chaos Orb",
+]
+
+
+def clear_layout(layout):
+    while layout.count():
+        item = layout.takeAt(0)
+        widget = item.widget()
+
+        if widget is not None:
+            widget.setParent(None)
+            widget.deleteLater()
+
+
+def build_trade_card(trade, interactive):
+
+    card = QFrame()
+    card.setObjectName("tradeCard")
+    card.setFixedHeight(150 if interactive else 125)
+
+    layout = QVBoxLayout(card)
+    layout.setContentsMargins(10, 8, 10, 8)
+    layout.setSpacing(6)
+
+    title = QLabel(trade.item_name)
+    title.setObjectName("tradeTitle")
+    layout.addWidget(title)
+
+    progress = QLabel(
+        f"Bought {trade.quantity_bought} · "
+        f"Sold {trade.quantity_sold} · "
+        f"Remaining {trade.remaining}"
+    )
+    progress.setObjectName("tradeInfo")
+    layout.addWidget(progress)
+
+    if trade.currency == "DIVINE":
+        buy_price = QLabel(
+            f"Buy: {trade.entered_price} Divine each "
+            f"({trade.unit_price_chaos:,}c each)"
+        )
+    else:
+        buy_price = QLabel(
+            f"Buy: {trade.unit_price_chaos:,}c each"
+        )
+
+    buy_price.setObjectName("tradeInfo")
+    layout.addWidget(buy_price)
+
+    invested = QLabel(
+        f"Invested: {trade.invested_chaos:,}c"
+    )
+    invested.setObjectName("tradeInfo")
+    layout.addWidget(invested)
+
+    if interactive:
+        sell_button = QPushButton("SELL")
+        sell_button.setObjectName("fauxTab")
+        sell_button.setEnabled(False)
+        sell_button.setToolTip("Coming in the next build step.")
+        layout.addWidget(sell_button)
+
+    return card
+
+
+def build_empty_state(message):
+    label = QLabel(message)
+    label.setObjectName("overlayPlaceholder")
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    return label
 
 
 class GalaxyHideout(QMainWindow):
@@ -21,14 +120,18 @@ class GalaxyHideout(QMainWindow):
 
         self.setWindowTitle("Galaxy Hideout")
         self.resize(1400, 850)
+        self.setMinimumSize(1000, 650)
+
+        self.trade_service = TradeService()
 
         self._build_ui()
+        self.refresh_all()
+
+    # =========================================================
+    # UI CONSTRUCTION
+    # =========================================================
 
     def _build_ui(self):
-
-        # =====================================================
-        # MAIN WINDOW
-        # =====================================================
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -37,21 +140,43 @@ class GalaxyHideout(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(15)
 
-        # =====================================================
-        # MAIN CONTENT
-        # =====================================================
+        self.content_area = ContentArea(
+            overlay_ratio=OVERLAY_SIZE_RATIO
+        )
 
-        content = QFrame()
-        content.setObjectName("content")
+        self.hideout = self._build_hideout()
+        self.content_area.set_hideout(self.hideout)
 
-        content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(20, 20, 20, 20)
-        content_layout.setSpacing(15)
+        self.overlay = OverlayPanel(
+            trade_service=self.trade_service,
+            on_trade_changed=self.refresh_all,
+            on_close=self._close_overlay
+        )
+        self.content_area.set_overlay(self.overlay)
 
-        # Header
-        # =====================================================
-        # HIDEOUT HEADER
-        # =====================================================
+        sidebar = self._build_sidebar()
+
+        main_layout.addWidget(self.content_area)
+        main_layout.addWidget(sidebar)
+
+        self._apply_stylesheet()
+
+    # =========================================================
+    # HIDEOUT (permanent background / HUD)
+    # =========================================================
+
+    def _build_hideout(self):
+
+        hideout = QFrame()
+        hideout.setObjectName("hideout")
+
+        layout = QVBoxLayout(hideout)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # -----------------------------------------------------
+        # HEADER
+        # -----------------------------------------------------
 
         header_layout = QHBoxLayout()
 
@@ -59,163 +184,243 @@ class GalaxyHideout(QMainWindow):
         hideout_title.setObjectName("hideoutTitle")
 
         header_layout.addWidget(hideout_title)
-
         header_layout.addStretch()
 
-        open_trade_button = QPushButton("+ OPEN TRADE")
-        open_trade_button.setObjectName("openTradeButton")
+        layout.addLayout(header_layout)
 
-        header_layout.addWidget(open_trade_button)
-
-        content_layout.addLayout(header_layout)
-
-        # =====================================================
-        # SUMMARY
-        # =====================================================
+        # -----------------------------------------------------
+        # HUD SUMMARY
+        # -----------------------------------------------------
 
         summary_layout = QHBoxLayout()
         summary_layout.setSpacing(12)
-           
 
-        profit_box = self._create_summary_box(
-            "PROFIT",
-            "+12,450c"
+        self.hud_profit_box, self.hud_profit_value = (
+            self._create_summary_box("TODAY'S PROFIT")
         )
 
-        trades_box = self._create_summary_box(
-            "OPEN TRADES",
-            "6"
-        )
-        inventory_box = self._create_summary_box(
-            "INVENTORY",
-            "15"
+        self.hud_trades_box, self.hud_trades_value = (
+            self._create_summary_box("OPEN TRADES")
         )
 
-        summary_layout.addWidget(profit_box)
-        summary_layout.addWidget(trades_box)
-        summary_layout.addWidget(inventory_box)
+        self.hud_stash_box, self.hud_stash_value = (
+            self._create_summary_box("STASH")
+        )
 
-        summary_layout.setStretch(0, 1)
-        summary_layout.setStretch(1, 1)
-        summary_layout.setStretch(2, 1)
+        summary_layout.addWidget(self.hud_profit_box)
+        summary_layout.addWidget(self.hud_trades_box)
+        summary_layout.addWidget(self.hud_stash_box)
 
-        content_layout.addLayout(summary_layout)
+        for index in range(3):
+            summary_layout.setStretch(index, 1)
 
-        # =====================================================
-        # OPEN TRADES TITLE
-        # =====================================================
+        layout.addLayout(summary_layout)
 
-        trades_title = QLabel("OPEN TRADES")
+        # -----------------------------------------------------
+        # LATEST OPEN TRADES (display-only, not clickable)
+        # -----------------------------------------------------
+
+        trades_title = QLabel("LATEST OPEN TRADES")
         trades_title.setObjectName("sectionTitle")
 
-        content_layout.addWidget(trades_title)
+        layout.addWidget(trades_title)
 
-        # =====================================================
-        # TRADE GRID
-        # =====================================================
+        self.hideout_trades_grid = QGridLayout()
+        self.hideout_trades_grid.setSpacing(12)
 
-        trade_grid = QGridLayout()
-        trade_grid.setSpacing(12)
+        layout.addLayout(self.hideout_trades_grid)
 
-        for i in range(6):
-
-            trade = self._create_trade_card(
-                i + 1
-            )
-
-            row = i // 3
-            column = i % 3
-
-            trade_grid.addWidget(
-                trade,
-                row,
-                column
-            )
-
-        content_layout.addLayout(trade_grid)
-
-        # =====================================================
-        # RECENT ACTIVITY
-        # =====================================================
+        # -----------------------------------------------------
+        # RECENT ACTIVITY (last 5 BUY/SELL only)
+        # -----------------------------------------------------
 
         activity_title = QLabel("RECENT ACTIVITY")
         activity_title.setObjectName("sectionTitle")
 
-        content_layout.addWidget(activity_title)
+        layout.addWidget(activity_title)
 
-        activity = QLabel(
-            "BUY  10 × Reflecting Mist  —  4,000c\n"
-            "SELL 10 × Reflecting Mist  —  6,000c\n"
-            "BUY  5 × Reflecting Mist   —  2,250c"
+        self.activity_label = QLabel("")
+        self.activity_label.setObjectName("activity")
+
+        layout.addWidget(self.activity_label)
+
+        # Space reserved for future Hideout additions.
+        layout.addStretch()
+
+        # -----------------------------------------------------
+        # DIVINE RATE CORNER
+        # -----------------------------------------------------
+
+        rate_layout = QHBoxLayout()
+        rate_layout.addStretch()
+
+        self.divine_rate_label = QLabel("")
+        self.divine_rate_label.setObjectName("divineRateCorner")
+
+        rate_layout.addWidget(self.divine_rate_label)
+
+        layout.addLayout(rate_layout)
+
+        return hideout
+
+    def _create_summary_box(self, title):
+
+        box = QFrame()
+        box.setObjectName("summaryBox")
+
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(15, 12, 15, 12)
+
+        title_label = QLabel(title)
+        title_label.setObjectName("summaryTitle")
+
+        value_label = QLabel("")
+        value_label.setObjectName("summaryValue")
+
+        layout.addWidget(title_label)
+        layout.addWidget(value_label)
+
+        return box, value_label
+
+    # =========================================================
+    # STATE REFRESH
+    # =========================================================
+
+    def refresh_all(self):
+        self.refresh_hideout()
+        self.overlay.refresh_faustus()
+
+    def refresh_hideout(self):
+        service = self.trade_service
+
+        self.hud_profit_value.setText(
+            f"{service.today_profit():+,}c"
+        )
+        self.hud_trades_value.setText(
+            str(service.open_trades_count())
+        )
+        self.hud_stash_value.setText(
+            str(service.stash_count())
         )
 
-        activity.setObjectName("activity")
+        clear_layout(self.hideout_trades_grid)
 
-        content_layout.addWidget(activity)
+        latest_trades = service.latest_open_trades(6)
 
-        content_layout.addStretch()     
+        if not latest_trades:
+            self.hideout_trades_grid.addWidget(
+                build_empty_state("No open trades yet."),
+                0, 0, 1, 3
+            )
+        else:
+            for index, trade in enumerate(latest_trades):
+                card = build_trade_card(trade, interactive=False)
 
-        # =====================================================
-        # SIDEBAR
-        # =====================================================
+                row = index // 3
+                column = index % 3
+
+                self.hideout_trades_grid.addWidget(card, row, column)
+
+        activity = service.recent_activity(5)
+
+        if not activity:
+            self.activity_label.setText("No activity yet.")
+        else:
+            lines = []
+
+            for entry in activity:
+                line = (
+                    f"{entry['type']:<5} "
+                    f"{entry['item']} x{entry['quantity']}"
+                    f"    {entry['total_chaos']:,}c"
+                )
+
+                if entry["profit"] is not None:
+                    line += f"  ({entry['profit']:+,}c)"
+
+                lines.append(line)
+
+            self.activity_label.setText("\n".join(lines))
+
+        self.divine_rate_label.setText(
+            f"◈ {service.divine_rate}"
+        )
+
+    # =========================================================
+    # SIDEBAR (only navigation mechanism)
+    # =========================================================
+
+    def _build_sidebar(self):
 
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(180)
 
-        sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(
-            15,
-            15,
-            15,
-            15
-        )
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
 
-        sidebar_layout.setSpacing(12)
-
-        title = QLabel(
-            "GALAXY\nHIDEOUT"
-        )
-
+        title = QLabel("GALAXY\nHIDEOUT")
         title.setObjectName("title")
-        title.setAlignment(
-            Qt.AlignmentFlag.AlignCenter
-        )
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        sidebar_layout.addWidget(title)
+        layout.addWidget(title)
+        layout.addSpacing(20)
 
-        sidebar_layout.addSpacing(20)
+        self.sidebar_group = QButtonGroup(self)
+        self.sidebar_group.setExclusive(True)
 
-        sidebar_items = [
-            "OVERVIEW",
-            "TRADES",
-            "INVENTORY",
-            "SETTINGS",
-        ]
+        for section in SIDEBAR_SECTIONS:
 
-        for item in sidebar_items:
+            button = QPushButton(section)
+            button.setObjectName("sidebarItem")
+            button.setCheckable(True)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
 
-            label = QLabel(item)
+            button.clicked.connect(
+                lambda checked, name=section: self._on_sidebar_clicked(name)
+            )
 
-            if item == "OVERVIEW":
-                label.setObjectName("sidebarItemActive")
-            else:
-                label.setObjectName("sidebarItem")
+            self.sidebar_group.addButton(button)
+            layout.addWidget(button)
 
-            sidebar_layout.addWidget(label)
+        layout.addStretch()
 
-        sidebar_layout.addStretch()
+        return sidebar
 
-        # =====================================================
-        # LAYOUT
-        # =====================================================
+    def _on_sidebar_clicked(self, section_name):
 
-        main_layout.addWidget(content)
-        main_layout.addWidget(sidebar)
+        if (
+            self.overlay.isVisible()
+            and self.overlay.current_section() == section_name
+        ):
+            self._close_overlay()
+            return
 
-        # =====================================================
-        # STYLE
-        # =====================================================
+        self._open_overlay(section_name)
+
+    # =========================================================
+    # OVERLAY CONTROL
+    # =========================================================
+
+    def _open_overlay(self, section_name):
+        self.overlay.show_section(section_name)
+        self.content_area.raise_overlay()
+
+    def _close_overlay(self):
+        self.overlay.hide()
+
+        checked_button = self.sidebar_group.checkedButton()
+        if checked_button is not None:
+            self.sidebar_group.setExclusive(False)
+            checked_button.setChecked(False)
+            self.sidebar_group.setExclusive(True)
+
+    # =========================================================
+    # STYLE
+    # =========================================================
+
+    def _apply_stylesheet(self):
 
         self.setStyleSheet("""
 
@@ -229,7 +434,7 @@ class GalaxyHideout(QMainWindow):
                 border-radius: 8px;
             }
 
-            #content {
+            #hideout {
                 background: #11111c;
                 border: 1px solid #303044;
                 border-radius: 8px;
@@ -241,14 +446,8 @@ class GalaxyHideout(QMainWindow):
                 color: #d8d8ff;
             }
 
-            #header {
-                font-size: 24px;
-                font-weight: bold;
-                color: #eeeeff;
-            }
-
             QLabel {
-                color: #aaaaC8;
+                color: #aaaac8;
                 font-size: 14px;
             }
 
@@ -269,11 +468,6 @@ class GalaxyHideout(QMainWindow):
                 font-size: 12px;
             }
 
-            #tradeProfit {
-                color: #d8d8ff;
-                font-size: 14px;
-                font-weight: bold;
-            }
             #hideoutTitle {
                 font-size: 26px;
                 font-weight: bold;
@@ -304,6 +498,7 @@ class GalaxyHideout(QMainWindow):
                 font-size: 22px;
                 font-weight: bold;
             }
+
             #activity {
                 background: #181824;
                 border: 1px solid #303044;
@@ -312,132 +507,526 @@ class GalaxyHideout(QMainWindow):
                 color: #aaaac8;
                 font-size: 13px;
             }
-            #sidebarItem {
-                color: #aaaac8;
-                font-size: 14px;
+
+            #divineRateCorner {
+                color: #8888a8;
+                font-size: 12px;
                 font-weight: bold;
-                padding: 10px;
             }
-            #sidebarItemActive {
-                color: #eeeeff;
-                background: #181824;
-                border: 1px solid #303044;
+
+            QPushButton#sidebarItem {
+                color: #aaaac8;
+                background: transparent;
+                border: 1px solid transparent;
                 border-radius: 5px;
                 font-size: 14px;
                 font-weight: bold;
                 padding: 10px;
-            }                                  
+                text-align: left;
+            }
+
+            QPushButton#sidebarItem:hover {
+                color: #eeeeff;
+                background: #181824;
+                border: 1px solid #303044;
+            }
+
+            QPushButton#sidebarItem:checked {
+                color: #eeeeff;
+                background: #22223a;
+                border: 1px solid #4a4a72;
+            }
+
+            #overlayPanel {
+                background: #14141f;
+                border: 1px solid #4a4a72;
+                border-radius: 10px;
+            }
+
+            #overlayTitle {
+                font-size: 18px;
+                font-weight: bold;
+                color: #eeeeff;
+            }
+
+            QPushButton#overlayCloseButton {
+                color: #aaaac8;
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 6px 12px;
+            }
+
+            QPushButton#overlayCloseButton:hover {
+                color: #eeeeff;
+                border: 1px solid #4a4a72;
+            }
+
+            #overlayPlaceholder {
+                color: #8888a8;
+                font-size: 15px;
+            }
+
+            QPushButton#fauxTab {
+                color: #aaaac8;
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 8px 20px;
+            }
+
+            QPushButton#fauxTab:checked {
+                color: #eeeeff;
+                background: #22223a;
+                border: 1px solid #4a4a72;
+            }
+
+            QPushButton#fauxTab:disabled {
+                color: #555570;
+            }
+
+            QPushButton#primaryButton {
+                color: #0b0b12;
+                background: #a8a8ff;
+                border: 1px solid #a8a8ff;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 10px 20px;
+            }
+
+            QPushButton#primaryButton:hover {
+                background: #c0c0ff;
+            }
+
+            QPushButton#secondaryButton {
+                color: #aaaac8;
+                background: transparent;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 10px 20px;
+            }
+
+            QPushButton#secondaryButton:hover {
+                color: #eeeeff;
+                border: 1px solid #4a4a72;
+            }
+
+            #formLabel {
+                color: #8888a8;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            #confirmSummary {
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 6px;
+                padding: 15px;
+                color: #eeeeff;
+                font-size: 13px;
+            }
+
+            QComboBox, QSpinBox {
+                color: #eeeeff;
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                padding: 6px;
+                font-size: 13px;
+            }
 
         """)
 
-    def _create_summary_box(self, title, value):
 
-        box = QFrame()
-        box.setObjectName("summaryBox")
+# =============================================================
+# CONTENT AREA
+# =============================================================
+# Hosts the permanent Hideout background plus a single overlay
+# panel that floats above it. The overlay is a plain child
+# widget (outside the layout) so it can be sized/positioned
+# independently and re-centered on resize.
+# =============================================================
 
-        layout = QVBoxLayout(box)
+class ContentArea(QWidget):
 
-        layout.setContentsMargins(
-            15,
-            12,
-            15,
-            12
+    def __init__(self, overlay_ratio, parent=None):
+        super().__init__(parent)
+
+        self._overlay_ratio = overlay_ratio
+        self._overlay = None
+
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+
+    def set_hideout(self, hideout_widget):
+        self._layout.addWidget(hideout_widget)
+
+    def set_overlay(self, overlay_widget):
+        self._overlay = overlay_widget
+        self._overlay.setParent(self)
+        self._overlay.hide()
+
+    def raise_overlay(self):
+        if self._overlay is not None:
+            self._position_overlay()
+            self._overlay.show()
+            self._overlay.raise_()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        if self._overlay is not None and self._overlay.isVisible():
+            self._position_overlay()
+
+    def _position_overlay(self):
+        width = int(self.width() * self._overlay_ratio)
+        height = int(self.height() * self._overlay_ratio)
+
+        x = (self.width() - width) // 2
+        y = (self.height() - height) // 2
+
+        self._overlay.setGeometry(x, y, width, height)
+
+
+# =============================================================
+# OVERLAY PANEL
+# =============================================================
+
+class OverlayPanel(QFrame):
+
+    def __init__(self, trade_service, on_trade_changed, on_close, parent=None):
+        super().__init__(parent)
+
+        self.setObjectName("overlayPanel")
+
+        self._on_close = on_close
+        self._current_section = None
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 15, 20, 20)
+        layout.setSpacing(15)
+
+        title_bar = QHBoxLayout()
+
+        self.title_label = QLabel("")
+        self.title_label.setObjectName("overlayTitle")
+        title_bar.addWidget(self.title_label)
+
+        title_bar.addStretch()
+
+        close_button = QPushButton("CLOSE")
+        close_button.setObjectName("overlayCloseButton")
+        close_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_button.clicked.connect(self._handle_close)
+
+        title_bar.addWidget(close_button)
+
+        layout.addLayout(title_bar)
+
+        self.stack = QStackedWidget()
+        layout.addWidget(self.stack)
+
+        self._pages = {}
+
+        self.faustus_page = FaustusPage(trade_service, on_trade_changed)
+        self._pages["FAUSTUS"] = self.faustus_page
+        self.stack.addWidget(self.faustus_page)
+
+        for section in SIDEBAR_SECTIONS:
+            if section == "FAUSTUS":
+                continue
+
+            page = self._build_placeholder_page(section)
+            self._pages[section] = page
+            self.stack.addWidget(page)
+
+    def current_section(self):
+        return self._current_section
+
+    def show_section(self, section_name):
+        self._current_section = section_name
+        self.title_label.setText(section_name)
+        self.stack.setCurrentWidget(self._pages[section_name])
+
+    def refresh_faustus(self):
+        self.faustus_page.refresh()
+
+    def _handle_close(self):
+        self._on_close()
+
+    def hide(self):
+        self._current_section = None
+        super().hide()
+
+    def _build_placeholder_page(self, section_name):
+
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        label = QLabel(f"{section_name} — coming soon")
+        label.setObjectName("overlayPlaceholder")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout.addWidget(label)
+
+        return page
+
+
+# =============================================================
+# FAUSTUS PAGE — active trading desk
+# =============================================================
+
+class FaustusPage(QWidget):
+
+    def __init__(self, trade_service, on_trade_changed, parent=None):
+        super().__init__(parent)
+
+        self.trade_service = trade_service
+        self.on_trade_changed = on_trade_changed
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+
+        # -----------------------------------------------------
+        # BUY | SELL TABS
+        # -----------------------------------------------------
+
+        tab_layout = QHBoxLayout()
+
+        self.buy_tab = QPushButton("BUY")
+        self.buy_tab.setObjectName("fauxTab")
+        self.buy_tab.setCheckable(True)
+        self.buy_tab.setChecked(True)
+
+        self.sell_tab = QPushButton("SELL")
+        self.sell_tab.setObjectName("fauxTab")
+        self.sell_tab.setCheckable(True)
+
+        self.tab_group = QButtonGroup(self)
+        self.tab_group.setExclusive(True)
+        self.tab_group.addButton(self.buy_tab)
+        self.tab_group.addButton(self.sell_tab)
+
+        self.buy_tab.clicked.connect(lambda: self.tab_stack.setCurrentIndex(0))
+        self.sell_tab.clicked.connect(lambda: self.tab_stack.setCurrentIndex(1))
+
+        tab_layout.addWidget(self.buy_tab)
+        tab_layout.addWidget(self.sell_tab)
+        tab_layout.addStretch()
+
+        layout.addLayout(tab_layout)
+
+        self.tab_stack = QStackedWidget()
+        layout.addWidget(self.tab_stack)
+
+        self.tab_stack.addWidget(self._build_buy_tab())
+        self.tab_stack.addWidget(
+            build_empty_state(
+                "Open a trade in BUY, then close it from its card "
+                "— coming in the next build step."
+            )
         )
 
-        title_label = QLabel(title)
-        title_label.setObjectName("summaryTitle")
+    # -----------------------------------------------------
+    # BUY TAB
+    # -----------------------------------------------------
 
-        value_label = QLabel(value)
-        value_label.setObjectName("summaryValue")
+    def _build_buy_tab(self):
 
-        layout.addWidget(title_label)
-        layout.addWidget(value_label)
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setSpacing(15)
 
-        return box
+        self.buy_stack = QStackedWidget()
+        layout.addWidget(self.buy_stack)
 
-    # =========================================================
-    # TRADE CARD
-    # =========================================================
+        self.buy_stack.addWidget(self._build_buy_form())
+        self.buy_stack.addWidget(self._build_buy_confirm())
 
-    def _create_trade_card(self, trade_number):
+        trades_title = QLabel("OPEN TRADES")
+        trades_title.setObjectName("sectionTitle")
+        layout.addWidget(trades_title)
 
-        card = QFrame()
-        card.setObjectName("tradeCard")
+        self.trades_grid = QGridLayout()
+        self.trades_grid.setSpacing(12)
+        layout.addLayout(self.trades_grid)
 
-        card.setFixedHeight(125)
+        layout.addStretch()
 
-        layout = QVBoxLayout(card)
+        return page
 
-        layout.setContentsMargins(
-            10,
-            8,
-            10,
-            8
+    def _build_buy_form(self):
+
+        form_page = QWidget()
+        outer = QVBoxLayout(form_page)
+
+        form = QFormLayout()
+        form.setSpacing(10)
+
+        self.item_input = QComboBox()
+        self.item_input.setEditable(True)
+        self.item_input.addItems(ITEM_CATALOG)
+
+        self.quantity_input = QSpinBox()
+        self.quantity_input.setRange(1, 100_000)
+        self.quantity_input.setValue(1)
+
+        self.currency_input = QComboBox()
+        self.currency_input.addItems(["CHAOS", "DIVINE"])
+
+        self.price_input = QSpinBox()
+        self.price_input.setRange(1, 10_000_000)
+        self.price_input.setValue(1)
+
+        self.gold_input = QSpinBox()
+        self.gold_input.setRange(0, 100_000_000)
+        self.gold_input.setValue(0)
+
+        form.addRow("Item", self.item_input)
+        form.addRow("Quantity", self.quantity_input)
+        form.addRow("Currency", self.currency_input)
+        form.addRow("Price per item", self.price_input)
+        form.addRow("Gold spent", self.gold_input)
+
+        outer.addLayout(form)
+
+        review_button = QPushButton("REVIEW BUY")
+        review_button.setObjectName("primaryButton")
+        review_button.clicked.connect(self._show_buy_confirm)
+
+        outer.addWidget(review_button)
+
+        return form_page
+
+    def _build_buy_confirm(self):
+
+        confirm_page = QWidget()
+        layout = QVBoxLayout(confirm_page)
+        layout.setSpacing(15)
+
+        self.confirm_summary = QLabel("")
+        self.confirm_summary.setObjectName("confirmSummary")
+        layout.addWidget(self.confirm_summary)
+
+        button_row = QHBoxLayout()
+
+        cancel_button = QPushButton("CANCEL")
+        cancel_button.setObjectName("secondaryButton")
+        cancel_button.clicked.connect(self._cancel_buy)
+
+        confirm_button = QPushButton("CONFIRM")
+        confirm_button.setObjectName("primaryButton")
+        confirm_button.clicked.connect(self._confirm_buy)
+
+        button_row.addWidget(cancel_button)
+        button_row.addWidget(confirm_button)
+
+        layout.addLayout(button_row)
+        layout.addStretch()
+
+        return confirm_page
+
+    def _show_buy_confirm(self):
+
+        item_name = self.item_input.currentText().strip()
+
+        if not item_name:
+            return
+
+        quantity = self.quantity_input.value()
+        currency = self.currency_input.currentText()
+        price = self.price_input.value()
+        gold = self.gold_input.value()
+
+        if currency == "DIVINE":
+            unit_chaos = self.trade_service.divine_to_chaos(price)
+            price_line = (
+                f"Price: {price} Divine each "
+                f"({unit_chaos:,}c each)"
+            )
+        else:
+            unit_chaos = price
+            price_line = f"Price: {price:,}c each"
+
+        total_chaos = unit_chaos * quantity
+
+        lines = [
+            "Transaction information",
+            "-----------------------",
+            f"Item: {item_name}",
+            "Type: BUY",
+            f"Quantity: {quantity}",
+            price_line,
+            f"Total: {total_chaos:,}c",
+            f"Gold spent: {gold:,}",
+        ]
+
+        self.confirm_summary.setText("\n".join(lines))
+        self.buy_stack.setCurrentIndex(1)
+
+    def _cancel_buy(self):
+        self.buy_stack.setCurrentIndex(0)
+
+    def _confirm_buy(self):
+
+        item_name = self.item_input.currentText().strip()
+        quantity = self.quantity_input.value()
+        currency = self.currency_input.currentText()
+        price = self.price_input.value()
+        gold = self.gold_input.value()
+
+        self.trade_service.open_trade(
+            item_name=item_name,
+            quantity=quantity,
+            currency=currency,
+            entered_price=price,
+            gold_spent=gold
         )
 
-        layout.setSpacing(6)
+        self._reset_buy_form()
+        self.buy_stack.setCurrentIndex(0)
 
-        title = QLabel(
-            f"TRADE #{trade_number}"
-        )
+        self.on_trade_changed()
 
-        title.setObjectName(
-            "tradeTitle"
-        )
+    def _reset_buy_form(self):
+        self.item_input.setCurrentIndex(0)
+        self.quantity_input.setValue(1)
+        self.currency_input.setCurrentIndex(0)
+        self.price_input.setValue(1)
+        self.gold_input.setValue(0)
 
-        layout.addWidget(title)
+    # -----------------------------------------------------
+    # REFRESH
+    # -----------------------------------------------------
 
-        item = QLabel(
-            "Reflecting Mist"
-        )
+    def refresh(self):
+        clear_layout(self.trades_grid)
 
-        item.setObjectName(
-            "tradeInfo"
-        )
+        open_trades = self.trade_service.open_trades()
 
-        layout.addWidget(item)
+        if not open_trades:
+            self.trades_grid.addWidget(
+                build_empty_state(
+                    "No open trades yet. Use BUY to open one."
+                ),
+                0, 0, 1, 3
+            )
+            return
 
-        quantity = QLabel(
-            "10 items"
-        )
+        for index, trade in enumerate(open_trades):
+            card = build_trade_card(trade, interactive=True)
 
-        quantity.setObjectName(
-            "tradeInfo"
-        )
+            row = index // 3
+            column = index % 3
 
-        layout.addWidget(quantity)
-
-        buy = QLabel(
-            "Buy: 400c each"
-        )
-
-        buy.setObjectName(
-            "tradeInfo"
-        )
-
-        layout.addWidget(buy)
-
-        sell = QLabel(
-            "Sell: 600c each"
-        )
-
-        sell.setObjectName(
-            "tradeInfo"
-        )
-
-        layout.addWidget(sell)
-
-        profit = QLabel(
-            "Profit: +2,000c"
-        )
-
-        profit.setObjectName(
-            "tradeProfit"
-        )
-
-        layout.addWidget(profit)
-
-        return card
+            self.trades_grid.addWidget(card, row, column)
 
 
 def main():
