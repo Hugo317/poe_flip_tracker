@@ -5,3 +5,7 @@
 # Qt's plugin directory scan silently finds nothing when run from inside a
 # TCC-protected folder, regardless of PySide6 version.
 PySide6==6.10.1
+
+# Persistence (data/divineflipper.db, migrated with Alembic)
+SQLAlchemy==2.0.52
+alembic==1.19.1
