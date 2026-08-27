@@ -1,21 +1,37 @@
 from pathlib import Path
 
 from PySide6.QtCore import QUrl
-from PySide6.QtMultimedia import QSoundEffect
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
 from backend.sound_rules import classify_sale_feedback
 
 SOUNDS_DIR = Path(__file__).resolve().parent.parent / "assets" / "sounds"
 
-# Swap these files for real ones any time — same filenames, no code
-# changes needed. See scripts/generate_sounds.py for how the current
-# placeholders were made.
-SOUND_FILES = {
-    "tink_small": "tink_small.wav",
-    "tink_medium": "tink_medium.wav",
-    "tink_large": "tink_large.wav",
-    "warning": "warning.wav",
+# Base names only — resolved to an actual file below. A local *.mp3
+# (personal, gitignored — see .gitignore) is preferred when present;
+# the committed *.wav placeholder is the always-available fallback, so
+# a fresh clone with no personal sounds still works out of the box.
+SOUND_BASE_NAMES = {
+    "tink_small": "tink_small",
+    "tink_medium": "tink_medium",
+    "tink_large": "tink_large",
+    "warning": "warning",
 }
+
+# QMediaPlayer (via Qt's FFmpeg backend) handles compressed formats
+# like MP3 directly, unlike QSoundEffect, which is PCM/WAV-only and
+# errors out on anything compressed — hence QMediaPlayer here even
+# though the committed fallback files are plain WAV.
+PREFERRED_EXTENSIONS = [".mp3", ".wav"]
+
+
+def _resolve_sound_path(base_name):
+    for extension in PREFERRED_EXTENSIONS:
+        path = SOUNDS_DIR / f"{base_name}{extension}"
+        if path.exists():
+            return path
+
+    return None
 
 
 class SoundPlayer:
@@ -27,14 +43,23 @@ class SoundPlayer:
     def __init__(self, trade_service):
         self.trade_service = trade_service
 
-        self._effects = {}
+        self._players = {}
+        self._audio_outputs = {}
 
-        for category, filename in SOUND_FILES.items():
-            effect = QSoundEffect()
-            effect.setSource(
-                QUrl.fromLocalFile(str(SOUNDS_DIR / filename))
-            )
-            self._effects[category] = effect
+        for category, base_name in SOUND_BASE_NAMES.items():
+            path = _resolve_sound_path(base_name)
+
+            if path is None:
+                continue
+
+            audio_output = QAudioOutput()
+
+            player = QMediaPlayer()
+            player.setAudioOutput(audio_output)
+            player.setSource(QUrl.fromLocalFile(str(path)))
+
+            self._players[category] = player
+            self._audio_outputs[category] = audio_output
 
     def play_for_profit(self, profit):
         category = classify_sale_feedback(
@@ -52,6 +77,13 @@ class SoundPlayer:
         elif not self.trade_service.sound_tink_enabled:
             return
 
-        effect = self._effects[category]
-        effect.setVolume(self.trade_service.sound_master_volume / 100)
-        effect.play()
+        if category not in self._players:
+            return
+
+        self._audio_outputs[category].setVolume(
+            self.trade_service.sound_master_volume / 100
+        )
+
+        player = self._players[category]
+        player.setPosition(0)
+        player.play()
