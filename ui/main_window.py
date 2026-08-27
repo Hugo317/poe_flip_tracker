@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QLineEdit,
     QScrollArea,
+    QDialog,
 )
 from PySide6.QtCore import Qt
 
@@ -1436,11 +1437,113 @@ class TradesPage(QWidget):
         self.rows_layout.addStretch()
 
 
+# =============================================================
+# STARTUP — mandatory Divine Rate prompt
+# =============================================================
+# Per the locked startup flow, the Divine rate is asked at launch and
+# is mandatory to answer (no skip). The NEW DAY / CONTINUE step is
+# intentionally omitted for now: with no persistence yet, a Trading
+# Day never actually carries over between launches, so there is
+# nothing real to "continue" to. That step belongs here once real
+# persistence exists.
+# =============================================================
+
+class StartupDialog(QDialog):
+
+    def __init__(self, default_rate, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Divine Rate")
+        self.setModal(True)
+        self._confirmed = False
+        self.chosen_rate = default_rate
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(30, 25, 30, 25)
+        layout.setSpacing(15)
+
+        title = QLabel("DIVINE RATE")
+        title.setObjectName("sectionTitle")
+        layout.addWidget(title)
+
+        instructions = QLabel("1 Divine = [ ___ ] Chaos")
+        layout.addWidget(instructions)
+
+        self.rate_input = QSpinBox()
+        self.rate_input.setRange(1, 10_000_000)
+        self.rate_input.setValue(default_rate)
+        layout.addWidget(self.rate_input)
+
+        confirm_button = QPushButton("CONFIRM")
+        confirm_button.setObjectName("primaryButton")
+        confirm_button.clicked.connect(self._confirm)
+        layout.addWidget(confirm_button)
+
+        self.setStyleSheet("""
+            QDialog {
+                background: #14141f;
+            }
+
+            QLabel {
+                color: #aaaac8;
+                font-size: 14px;
+            }
+
+            #sectionTitle {
+                font-size: 18px;
+                font-weight: bold;
+                color: #d8d8ff;
+            }
+
+            QSpinBox {
+                color: #eeeeff;
+                background: #181824;
+                border: 1px solid #303044;
+                border-radius: 5px;
+                padding: 6px;
+                font-size: 13px;
+            }
+
+            QPushButton#primaryButton {
+                color: #0b0b12;
+                background: #a8a8ff;
+                border: 1px solid #a8a8ff;
+                border-radius: 5px;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 10px 20px;
+            }
+
+            QPushButton#primaryButton:hover {
+                background: #c0c0ff;
+            }
+        """)
+
+    def _confirm(self):
+        self.chosen_rate = self.rate_input.value()
+        self._confirmed = True
+        self.accept()
+
+    def closeEvent(self, event):
+        if self._confirmed:
+            event.accept()
+        else:
+            event.ignore()
+
+
 def main():
 
     app = QApplication(sys.argv)
 
     window = GalaxyHideout()
+
+    startup_dialog = StartupDialog(
+        default_rate=window.trade_service.divine_rate
+    )
+    startup_dialog.exec()
+
+    window.trade_service.set_divine_rate(startup_dialog.chosen_rate)
+    window.refresh_all()
 
     window.show()
 
