@@ -1,0 +1,3 @@
+FancyText font
+Source: https://www.fontspace.com/fancytext-font-f1720
+License: Public Domain (no restrictions on use or redistribution)

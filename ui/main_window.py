@@ -1,4 +1,6 @@
 import sys
+import random
+import math
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -23,9 +25,13 @@ from PySide6.QtWidgets import (
     QCompleter,
     QAbstractSpinBox,
     QMessageBox,
+    QGraphicsDropShadowEffect,
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFontDatabase, QIcon, QPixmap
+from PySide6.QtCore import Qt, QSize, QPointF, QRectF, QTimer
+from PySide6.QtGui import (
+    QFontDatabase, QIcon, QPixmap, QPainter, QColor, QTransform,
+    QPainterPath, QFont, QFontMetrics, QPen, QLinearGradient, QBrush,
+)
 
 from backend.trades import TradeService, TradeHasSalesError
 from backend.assets_service import AssetService
@@ -49,6 +55,14 @@ SIDEBAR_ICONS = {
     "TRADES": "🤝",
     "ANALYTICS": "📈",
     "SETTINGS": "🛠",
+}
+
+# Display text for a completed transaction's type — "BUY"/"SELL"
+# stays the internal data value (matches backend/trades.py and the
+# Trades page filter), only how it's shown changes (Hugo's request).
+TRANSACTION_TYPE_DISPLAY = {
+    "BUY": "BOUGHT",
+    "SELL": "SOLD",
 }
 
 SIDEBAR_WIDTH_EXPANDED = 180
@@ -81,6 +95,27 @@ def load_display_font():
     return f"'{families[0]}', {DISPLAY_FONT_FALLBACK}"
 
 
+TITLE_FONT_FALLBACK = "Impact, 'Arial Black', sans-serif"
+
+
+def load_title_font():
+    """The Hideout's "MY HIDEOUT" neon title uses its own ornate
+    display font (Pirata One) rather than the app-wide one."""
+
+    font_path = FONT_ASSETS_DIR / "PirataOne.ttf"
+
+    if not font_path.exists():
+        return TITLE_FONT_FALLBACK
+
+    font_id = QFontDatabase.addApplicationFont(str(font_path))
+    families = QFontDatabase.applicationFontFamilies(font_id)
+
+    if not families:
+        return TITLE_FONT_FALLBACK
+
+    return f"'{families[0]}', {TITLE_FONT_FALLBACK}"
+
+
 def clear_layout(layout):
     while layout.count():
         item = layout.takeAt(0)
@@ -95,6 +130,7 @@ def build_trade_card(trade, interactive, on_sell=None):
 
     card = QFrame()
     card.setObjectName("tradeCard")
+    card.setFixedWidth(210)
     card.setFixedHeight(150 if interactive else 125)
 
     layout = QVBoxLayout(card)
@@ -153,29 +189,28 @@ def build_transaction_card(transaction, asset_service):
 
     header_row = QHBoxLayout()
 
-    type_label = QLabel(transaction["type"])
+    item_asset = asset_service.get_asset_by_name(transaction["item"])
+    icon_path = (
+        asset_service.icon_file_path(item_asset)
+        if item_asset is not None else None
+    )
+
+    if icon_path is not None:
+        header_icon = QLabel()
+        header_icon.setPixmap(
+            QPixmap(str(icon_path)).scaled(
+                20, 20,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+        )
+        header_row.addWidget(header_icon)
+
+    type_text = TRANSACTION_TYPE_DISPLAY[transaction["type"]].capitalize()
+    type_label = QLabel(type_text)
     type_label.setObjectName("tradeTitle")
     header_row.addWidget(type_label)
     header_row.addStretch()
-
-    currency_asset_name = (
-        "Divine Orb" if transaction["currency"] == "DIVINE" else "Chaos Orb"
-    )
-    currency_asset = asset_service.get_asset_by_name(currency_asset_name)
-
-    if currency_asset is not None:
-        icon_path = asset_service.icon_file_path(currency_asset)
-
-        if icon_path is not None:
-            currency_icon = QLabel()
-            currency_icon.setPixmap(
-                QPixmap(str(icon_path)).scaled(
-                    20, 20,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-            )
-            header_row.addWidget(currency_icon)
 
     layout.addLayout(header_row)
 
@@ -184,43 +219,40 @@ def build_transaction_card(transaction, asset_service):
     divider.setObjectName("cardDivider")
     layout.addWidget(divider)
 
-    item_row = QHBoxLayout()
-
-    item_asset = asset_service.get_asset_by_name(transaction["item"])
-
-    if item_asset is not None:
-        icon_path = asset_service.icon_file_path(item_asset)
-
-        if icon_path is not None:
-            item_icon = QLabel()
-            item_icon.setPixmap(
-                QPixmap(str(icon_path)).scaled(
-                    20, 20,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-            )
-            item_row.addWidget(item_icon)
-
     item_name = QLabel(transaction["item"])
     item_name.setObjectName("tradeInfo")
     item_name.setWordWrap(True)
-    item_row.addWidget(item_name)
-    item_row.addStretch()
+    layout.addWidget(item_name)
 
-    layout.addLayout(item_row)
+    price_row = QHBoxLayout()
+    price_row.setSpacing(4)
+
+    quantity_label = QLabel(str(transaction["quantity"]))
+    quantity_label.setObjectName("tradeInfo")
+    price_row.addWidget(quantity_label)
+
+    if icon_path is not None:
+        price_icon = QLabel()
+        price_icon.setPixmap(
+            QPixmap(str(icon_path)).scaled(
+                20, 20,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+        )
+        price_row.addWidget(price_icon)
 
     if transaction["currency"] == "DIVINE":
-        price_line = QLabel(
-            f"{transaction['quantity']} @ {transaction['entered_price']} Divine each"
-        )
+        price_text = f"@ {transaction['entered_price']} Divine each"
     else:
-        price_line = QLabel(
-            f"{transaction['quantity']} @ {transaction['entered_price']:,}c each"
-        )
+        price_text = f"@ {transaction['entered_price']:,}c each"
 
-    price_line.setObjectName("tradeInfo")
-    layout.addWidget(price_line)
+    price_label = QLabel(price_text)
+    price_label.setObjectName("tradeInfo")
+    price_row.addWidget(price_label)
+    price_row.addStretch()
+
+    layout.addLayout(price_row)
 
     total_text = f"Total: {transaction['total_chaos']:,}c"
     if transaction["profit"] is not None:
@@ -491,6 +523,357 @@ class GoldEstimator:
             self.gold_display.setText(f"{gold:,}")
 
 
+class NeonTitleLabel(QWidget):
+    """Engraved-metal title treatment (Hugo's request, replacing an
+    earlier flat-fill+glow "neon sign" look that read as cheap):
+    a vertical gold-to-bronze gradient fill, a carved bevel (a
+    highlight sliver top-left, a shadow sliver bottom-right — like
+    light catching a cast/engraved metal logo), and a tight hard
+    drop shadow instead of an ambient glow. QSS/QLabel can't do any
+    of this on their own, so the glyphs are painted directly via
+    QPainterPath (fill + stroke)."""
+
+    GRADIENT_TOP = QColor("#f5ecd8")
+    GRADIENT_BOTTOM = QColor("#e0d0a8")
+    OUTLINE_GRADIENT_TOP = QColor("#c49a3a")
+    OUTLINE_GRADIENT_BOTTOM = QColor("#9a7526")
+    # Calibrated at REFERENCE_HEIGHT (HIDEOUT's size) — scaled down
+    # proportionally for smaller titles (e.g. "OPEN TRADES") in
+    # set_target_height, so the outline doesn't look proportionally
+    # thick at small sizes (Hugo's request).
+    OUTLINE_WIDTH = 1.2
+    REFERENCE_HEIGHT = 90
+    MIN_OUTLINE_WIDTH = 0.3
+    BEVEL_HIGHLIGHT = QColor("#fffaf0")
+    BEVEL_SHADOW = QColor("#9c8f6c")
+    BEVEL_OFFSET = 1.2
+    DROP_SHADOW_COLOR = QColor(10, 8, 6, 200)
+    DROP_SHADOW_BLUR_RADIUS = 10
+    DROP_SHADOW_OFFSET = QPointF(3, 4)
+
+    # Procedural crack/grain texture (Hugo's request, referencing a
+    # "Curse of the Allflame"-style weathered engraved look) — drawn
+    # directly rather than sourced from an image, so there's no
+    # licensing question at all. Deterministic (fixed seed) so it
+    # doesn't flicker/change between repaints.
+    TEXTURE_ENABLED = True
+    TEXTURE_SEED = 42
+    CRACK_COLOR = QColor(40, 32, 16, 60)
+    CRACK_COUNT = 42
+    NOISE_COLOR = QColor(40, 32, 16, 25)
+    NOISE_DENSITY = 200
+    # Fraction of cracks that also carve an actual missing chunk (a
+    # real hole in the glyph path, revealing the background behind)
+    # rather than just a drawn line — Hugo's request for MORE actual
+    # broken-off pieces, LESS dark crack/grain texture, and deeper
+    # (bigger) bites.
+    CHIP_PROBABILITY = 0.85
+    CHIP_MIN_RADIUS = 6.0
+    CHIP_MAX_RADIUS = 15.0
+
+    # Extra px inserted before the second letter of a specific pair
+    # only — e.g. {("U", "T"): 6} widens the U→T gap without touching
+    # any other letter spacing (Hugo: "spread the T from the U", not
+    # a global letter-spacing change).
+    EXTRA_GAP_PAIRS = {("U", "T"): 6}
+
+    def __init__(self, text, font_family_qss, target_height=90, parent=None):
+        super().__init__(parent)
+
+        self._text = text
+        self._primary_family = (
+            font_family_qss.split(",")[0].strip().strip("'\"")
+        )
+        self._font = QFont(self._primary_family)
+
+        # Kept as self._shadow, not a local var — PySide6 will garbage
+        # collect the Python wrapper (silently dropping the effect)
+        # if nothing keeps a live reference, even though Qt's C++
+        # side parents it via setGraphicsEffect().
+        self._shadow = QGraphicsDropShadowEffect()
+        self._shadow.setColor(self.DROP_SHADOW_COLOR)
+        self._shadow.setBlurRadius(self.DROP_SHADOW_BLUR_RADIUS)
+        self._shadow.setOffset(self.DROP_SHADOW_OFFSET)
+        self.setGraphicsEffect(self._shadow)
+
+        self.set_target_height(target_height)
+
+    def set_target_height(self, target_height, max_width=None):
+        """Resizes the widget so the painted glyphs' cap-height equals
+        `target_height` px, back-solving the QFont point size from a
+        reference size (font-metric height scales ~linearly with
+        point size for a given family). If the resulting text would be
+        wider than `max_width`, scales back down to fit — different
+        fonts have very different width-to-cap-height ratios, so a
+        height-only fit can otherwise run off the window edge."""
+
+        reference_point_size = 100
+        reference_font = QFont(self._primary_family)
+        reference_font.setPointSize(reference_point_size)
+        reference_font.setBold(True)
+        reference_metrics = QFontMetrics(reference_font)
+        reference_cap_height = (
+            reference_metrics.capHeight() or reference_metrics.ascent()
+        )
+
+        scale = target_height / reference_cap_height
+        point_size = max(10, round(reference_point_size * scale))
+
+        self._outline_width = max(
+            self.MIN_OUTLINE_WIDTH,
+            self.OUTLINE_WIDTH * (target_height / self.REFERENCE_HEIGHT)
+        )
+
+        margin = (
+            self._outline_width * 2
+            + self.BEVEL_OFFSET * 2
+            + self.DROP_SHADOW_BLUR_RADIUS
+        )
+
+        def build(point_size):
+            font = QFont(self._primary_family)
+            font.setPointSize(point_size)
+            font.setWeight(QFont.Weight.Normal)
+            font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 4)
+            metrics = QFontMetrics(font)
+            text_rect = metrics.boundingRect(self._text)
+            return font, text_rect
+
+        self._font, text_rect = build(point_size)
+
+        if max_width is not None:
+            full_width = text_rect.width() + margin * 2
+            if full_width > max_width:
+                point_size = max(
+                    10, round(point_size * (max_width / full_width))
+                )
+                self._font, text_rect = build(point_size)
+
+        self.setFixedSize(
+            text_rect.width() + margin * 2 + self._extra_gap_total(),
+            text_rect.height() + margin * 2
+        )
+        self.update()
+
+    def _extra_gap_total(self):
+        total = 0
+        for i in range(1, len(self._text)):
+            pair = (self._text[i - 1], self._text[i])
+            total += self.EXTRA_GAP_PAIRS.get(pair, 0)
+        return total
+
+    def _gap_split(self):
+        """Index/gap-width of the first EXTRA_GAP_PAIRS match in the
+        text, so paintEvent can draw it as two separate runs with a
+        manual gap between them — everything else stays a single
+        Qt-shaped run, so normal letter-spacing is untouched."""
+
+        for i in range(1, len(self._text)):
+            pair = (self._text[i - 1], self._text[i])
+            if pair in self.EXTRA_GAP_PAIRS:
+                return i, self.EXTRA_GAP_PAIRS[pair]
+        return None, 0
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        try:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+            metrics = QFontMetrics(self._font)
+            # Centered from the same ink bounding box used to size the
+            # widget in set_target_height — using horizontalAdvance()
+            # here instead (which includes the letter-spacing tail
+            # after the last glyph) previously clipped the last
+            # character(s), since the box was never sized to fit it.
+            text_rect = metrics.boundingRect(self._text)
+            extra_gap_total = self._extra_gap_total()
+            x = (
+                (self.width() - text_rect.width() - extra_gap_total) / 2
+                - text_rect.left()
+            )
+            y = (
+                (self.height() + metrics.ascent() - metrics.descent())
+                / 2
+            )
+
+            path = QPainterPath()
+            split_index, gap = self._gap_split()
+            if split_index is None:
+                path.addText(x, y, self._font, self._text)
+            else:
+                first, second = (
+                    self._text[:split_index], self._text[split_index:]
+                )
+                path.addText(x, y, self._font, first)
+                second_x = x + metrics.horizontalAdvance(first) + gap
+                path.addText(second_x, y, self._font, second)
+
+            cracks = []
+            visible_path = path
+            if self.TEXTURE_ENABLED:
+                cracks, chips = self._build_texture(path)
+                if not chips.isEmpty():
+                    visible_path = path.subtracted(chips)
+
+            painter.setPen(Qt.PenStyle.NoPen)
+
+            shadow_path = QPainterPath(visible_path)
+            shadow_path.translate(self.BEVEL_OFFSET, self.BEVEL_OFFSET)
+            painter.setBrush(self.BEVEL_SHADOW)
+            painter.drawPath(shadow_path)
+
+            highlight_path = QPainterPath(visible_path)
+            highlight_path.translate(
+                -self.BEVEL_OFFSET, -self.BEVEL_OFFSET
+            )
+            painter.setBrush(self.BEVEL_HIGHLIGHT)
+            painter.drawPath(highlight_path)
+
+            gradient = QLinearGradient(
+                0, path.boundingRect().top(),
+                0, path.boundingRect().bottom()
+            )
+            gradient.setColorAt(0, self.GRADIENT_TOP)
+            gradient.setColorAt(1, self.GRADIENT_BOTTOM)
+
+            outline_gradient = QLinearGradient(
+                0, path.boundingRect().top(),
+                0, path.boundingRect().bottom()
+            )
+            outline_gradient.setColorAt(0, self.OUTLINE_GRADIENT_TOP)
+            outline_gradient.setColorAt(1, self.OUTLINE_GRADIENT_BOTTOM)
+
+            painter.setPen(
+                QPen(QBrush(outline_gradient), self._outline_width)
+            )
+            painter.setBrush(gradient)
+            painter.drawPath(visible_path)
+
+            if self.TEXTURE_ENABLED:
+                self._paint_texture_overlay(painter, visible_path, cracks)
+        finally:
+            painter.end()
+
+    def _build_texture(self, path):
+        """Deterministically builds the crack lines and, for a subset
+        of them, an actual chip hole where the crack meets the glyph's
+        edge — a small wedge subtracted from the glyph path so the
+        real background shows through, like a piece broke off the
+        rim (Hugo's reference: a cracked stone sphere with wedge-shaped
+        notches bitten out along the edge), rather than a floating
+        round hole in the middle of a letter."""
+
+        rng = random.Random(self.TEXTURE_SEED)
+        rect = path.boundingRect()
+        cracks = []
+        chips = QPainterPath()
+
+        for _ in range(self.CRACK_COUNT):
+            x, y, outward_angle = self._find_edge_point(path, rect, rng)
+            crack = QPainterPath()
+            crack.moveTo(x, y)
+            cx, cy = x, y
+            for _ in range(rng.randint(3, 6)):
+                cx += rng.uniform(-9, 9)
+                cy += rng.uniform(-9, 9)
+                crack.lineTo(cx, cy)
+            cracks.append(crack)
+
+            wants_chip = rng.random() < self.CHIP_PROBABILITY
+            if wants_chip and self._has_room_for_chip(
+                path, x, y, outward_angle
+            ):
+                chips.addPath(
+                    self._build_chip_wedge(x, y, outward_angle, rng)
+                )
+
+        return cracks, chips
+
+    def _has_room_for_chip(self, path, x, y, outward_angle, probe=6.0):
+        """True only if there's solid material behind this edge point
+        (checked back along the inward direction) — skips thin serif
+        tips/flourishes where a chip would sever a sliver off into a
+        disconnected-looking fragment instead of biting cleanly into
+        the letter (the artifact Hugo flagged as looking like broken
+        clipping rather than a deliberate chip)."""
+
+        inward = QPointF(
+            x - probe * math.cos(outward_angle),
+            y - probe * math.sin(outward_angle)
+        )
+        return path.contains(inward)
+
+    def _find_edge_point(self, path, rect, rng, attempts=40, probe=4.0):
+        """Finds a point just inside the glyph that sits near its
+        outer boundary, returning it plus the direction that steps
+        outside the shape — so a chip built there reads as a bite
+        out of the actual edge, not a hole floating mid-letter."""
+
+        for _ in range(attempts):
+            x = rect.left() + rng.random() * rect.width()
+            y = rect.top() + rng.random() * rect.height()
+            if not path.contains(QPointF(x, y)):
+                continue
+            for step in range(8):
+                angle = (2 * math.pi / 8) * step
+                probe_point = QPointF(
+                    x + probe * math.cos(angle),
+                    y + probe * math.sin(angle)
+                )
+                if not path.contains(probe_point):
+                    return x, y, angle
+
+        x = rect.left() + rng.random() * rect.width()
+        y = rect.top() + rng.random() * rect.height()
+        return x, y, rng.random() * 2 * math.pi
+
+    def _build_chip_wedge(self, cx, cy, outward_angle, rng):
+        """A jagged wedge fanning outward from (cx, cy) — an inner
+        pinch point plus a spread of irregular outer points, like a
+        shard broken away from the edge."""
+
+        radius = rng.uniform(self.CHIP_MIN_RADIUS, self.CHIP_MAX_RADIUS)
+        spread = math.radians(rng.uniform(50, 90))
+        point_count = 3
+
+        wedge = QPainterPath()
+        wedge.moveTo(cx, cy)
+        for i in range(point_count):
+            angle = (
+                outward_angle - spread / 2
+                + spread * (i / (point_count - 1))
+            )
+            r = radius * rng.uniform(0.5, 1.5)
+            px = cx + r * math.cos(angle)
+            py = cy + r * math.sin(angle)
+            wedge.lineTo(px, py)
+        wedge.closeSubpath()
+        return wedge
+
+    def _paint_texture_overlay(self, painter, clip_path, cracks):
+        """Grain dots + the crack lines built in `_build_texture`,
+        clipped to the (possibly chip-holed) glyph shape."""
+
+        rng = random.Random(self.TEXTURE_SEED + 1)
+        rect = clip_path.boundingRect()
+
+        painter.save()
+        painter.setClipPath(clip_path)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(self.NOISE_COLOR)
+        for _ in range(self.NOISE_DENSITY):
+            x = rect.left() + rng.random() * rect.width()
+            y = rect.top() + rng.random() * rect.height()
+            r = rng.uniform(0.3, 1.1)
+            painter.drawEllipse(QPointF(x, y), r, r)
+
+        painter.setPen(QPen(self.CRACK_COLOR, 1.0))
+        for crack in cracks:
+            painter.drawPath(crack)
+        painter.restore()
+
+
 class HoverSidebar(QFrame):
     """Expands on mouse-over, collapses back to icons-only when the
     mouse leaves (Hugo's request — no manual toggle button)."""
@@ -509,6 +892,122 @@ class HoverSidebar(QFrame):
         super().leaveEvent(event)
 
 
+IMAGES_DIR = Path(__file__).resolve().parent.parent / "assets" / "images"
+
+
+class NebulaBackground(QWidget):
+    """Directive Q45 — permanent animated Hideout background: a
+    static galaxy backdrop with a dust haze and two star layers
+    slowly drifting over it at different speeds/directions for a
+    parallax depth effect. All four images are public-domain/CC0
+    (see assets/images/LICENSES.txt)."""
+
+    # (dx, dy) per tick, and paint opacity, for each drifting layer —
+    # distinct directions/speeds so the layers read as separate depths
+    # rather than one flat scrolling image. Slow but visibly moving.
+    STARS_SMALL_DRIFT = QPointF(0.06, 0.02)
+    STARS_SMALL_OPACITY = 0.75
+
+    DUST_DRIFT = QPointF(-0.15, 0.08)
+    DUST_OPACITY = 0.08
+
+    STARS_BRIGHT_DRIFT = QPointF(0.25, -0.12)
+    STARS_BRIGHT_OPACITY = 0.95
+
+    # Star sprites downscaled to 1/5 size so individual stars read as
+    # small bright points ("little blinks") rather than big soft blobs.
+    STAR_SPRITE_SCALE = 0.2
+
+    TICK_MS = 40
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+        # The source photo is portrait (1155x2000); rotating it 90°
+        # left turns it landscape, which is a much closer aspect-ratio
+        # match to the window — "cover" then crops far less while
+        # still filling every pixel (no void bars).
+        raw_galaxy = QPixmap(str(IMAGES_DIR / "galaxy_pillars_of_creation.png"))
+        self._galaxy = raw_galaxy.transformed(
+            QTransform().rotate(-90), Qt.TransformationMode.SmoothTransformation
+        )
+        self._dust = QPixmap(str(IMAGES_DIR / "dust_vapor.png"))
+
+        raw_stars_small = QPixmap(str(IMAGES_DIR / "stars_small.png"))
+        raw_stars_bright = QPixmap(str(IMAGES_DIR / "stars_bright.png"))
+        self._stars_small = raw_stars_small.scaled(
+            int(raw_stars_small.width() * self.STAR_SPRITE_SCALE),
+            int(raw_stars_small.height() * self.STAR_SPRITE_SCALE),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self._stars_bright = raw_stars_bright.scaled(
+            int(raw_stars_bright.width() * self.STAR_SPRITE_SCALE),
+            int(raw_stars_bright.height() * self.STAR_SPRITE_SCALE),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+        self._stars_small_offset = QPointF(0, 0)
+        self._dust_offset = QPointF(0, 0)
+        self._stars_bright_offset = QPointF(0, 0)
+
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._advance)
+        self._timer.start(self.TICK_MS)
+
+    def _advance(self):
+        self._stars_small_offset += self.STARS_SMALL_DRIFT
+        self._dust_offset += self.DUST_DRIFT
+        self._stars_bright_offset += self.STARS_BRIGHT_DRIFT
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        try:
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+            rect_f = QRectF(self.rect())
+
+            # Safety-net fill in case of any 1px rounding seam at the
+            # edges — the rotated image's aspect ratio is close enough
+            # to the window's that "cover" below leaves no real gap.
+            painter.fillRect(self.rect(), QColor("#08070f"))
+
+            if not self._galaxy.isNull() and self.width() and self.height():
+                scaled = self._galaxy.scaled(
+                    self.size(),
+                    Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                x = (self.width() - scaled.width()) // 2
+                y = (self.height() - scaled.height()) // 2
+                painter.drawPixmap(x, y, scaled)
+
+            if not self._stars_small.isNull():
+                painter.setOpacity(self.STARS_SMALL_OPACITY)
+                painter.drawTiledPixmap(
+                    rect_f, self._stars_small, self._stars_small_offset
+                )
+
+            if not self._dust.isNull():
+                painter.setOpacity(self.DUST_OPACITY)
+                painter.drawTiledPixmap(
+                    rect_f, self._dust, self._dust_offset
+                )
+
+            if not self._stars_bright.isNull():
+                painter.setOpacity(self.STARS_BRIGHT_OPACITY)
+                painter.drawTiledPixmap(
+                    rect_f, self._stars_bright, self._stars_bright_offset
+                )
+        finally:
+            painter.end()
+
+
 class GalaxyHideout(QMainWindow):
 
     def __init__(self):
@@ -519,6 +1018,7 @@ class GalaxyHideout(QMainWindow):
         self.setMinimumSize(1400, 850)
 
         self.display_font = load_display_font()
+        self.title_font = load_title_font()
 
         self.trade_service = TradeService()
         self.asset_service = AssetService(session=self.trade_service.session)
@@ -549,6 +1049,12 @@ class GalaxyHideout(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         self._central = central
+
+        # Covers the entire window — outer margins, sidebar gutter,
+        # everything — not just the Hideout panel (Hugo's request).
+        # Sized/repositioned in resizeEvent, same as the sidebar.
+        self.nebula_background = NebulaBackground(central)
+        self.nebula_background.lower()
 
         # The sidebar is NOT part of this layout — it floats on top as
         # an overlay (Hugo's request), positioned manually in
@@ -587,7 +1093,28 @@ class GalaxyHideout(QMainWindow):
         sidebar.raise_()
         self._position_sidebar()
 
+        self.nebula_background.setGeometry(central.rect())
+        self.nebula_background.lower()
+
         self._apply_stylesheet()
+
+        # Deferred one frame so the initial layout pass has already run
+        # and hud_profit_box has a real, laid-out position to measure
+        # (Hugo's request: title fills 90% of the gap between the
+        # window's top edge and the first HUD card).
+        QTimer.singleShot(0, self._fit_hideout_title)
+
+    def _fit_hideout_title(self):
+        gap = self.hud_profit_box.mapTo(
+            self._central, self.hud_profit_box.rect().topLeft()
+        ).y()
+        # 25% / 50% / 25% split (Hugo's request): title is constrained
+        # to the center half of the hideout's width, with empty gutters
+        # on either side.
+        max_width = self.hideout.width() * 0.5
+        self.hideout_title.set_target_height(
+            gap * 0.9 * 0.65 * 0.7, max_width=max_width
+        )
 
     def _position_sidebar(self):
         central = self._central
@@ -601,6 +1128,7 @@ class GalaxyHideout(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._position_sidebar()
+        self.nebula_background.setGeometry(self._central.rect())
 
     # =========================================================
     # HIDEOUT (permanent background / HUD)
@@ -621,10 +1149,113 @@ class GalaxyHideout(QMainWindow):
 
         header_layout = QHBoxLayout()
 
-        hideout_title = QLabel("MY HIDEOUT")
-        hideout_title.setObjectName("hideoutTitle")
+        # Top-left corner block (Hugo's request, replacing the old
+        # bottom-right rate chip): gold spent this league (icon +
+        # number, no label text) above the divine:chaos rate (real
+        # icons either side of the ratio). Each row is its own card
+        # (Hugo's request), same black see-through look as the rest
+        # of the Hideout's cards, white text.
+        corner_layout = QVBoxLayout()
+        corner_layout.setSpacing(6)
 
-        header_layout.addWidget(hideout_title)
+        gold_card = QFrame()
+        gold_card.setObjectName("tradeCard")
+        gold_row = QHBoxLayout(gold_card)
+        gold_row.setContentsMargins(10, 6, 10, 6)
+        gold_row.setSpacing(4)
+
+        gold_asset = self.asset_service.get_asset_by_name("Gold")
+        gold_icon_path = (
+            self.asset_service.icon_file_path(gold_asset)
+            if gold_asset is not None else None
+        )
+        if gold_icon_path is not None:
+            gold_icon = QLabel()
+            gold_icon.setPixmap(
+                QPixmap(str(gold_icon_path)).scaled(
+                    16, 16,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            gold_row.addWidget(gold_icon)
+
+        gold_colon_label = QLabel(":")
+        gold_colon_label.setObjectName("divineRateCorner")
+        gold_row.addWidget(gold_colon_label)
+
+        self.gold_spent_label = QLabel("0")
+        self.gold_spent_label.setObjectName("divineRateCorner")
+        gold_row.addWidget(self.gold_spent_label)
+        gold_row.addStretch()
+        corner_layout.addWidget(gold_card, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        rate_card = QFrame()
+        rate_card.setObjectName("tradeCard")
+        rate_row = QHBoxLayout(rate_card)
+        rate_row.setContentsMargins(10, 6, 10, 6)
+        rate_row.setSpacing(4)
+
+        divine_asset = self.asset_service.get_asset_by_name("Divine Orb")
+        divine_icon_path = (
+            self.asset_service.icon_file_path(divine_asset)
+            if divine_asset is not None else None
+        )
+        if divine_icon_path is not None:
+            divine_icon = QLabel()
+            divine_icon.setPixmap(
+                QPixmap(str(divine_icon_path)).scaled(
+                    16, 16,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            rate_row.addWidget(divine_icon)
+
+        colon_label = QLabel(":")
+        colon_label.setObjectName("divineRateCorner")
+        rate_row.addWidget(colon_label)
+
+        self.divine_rate_label = QLabel("")
+        self.divine_rate_label.setObjectName("divineRateCorner")
+        rate_row.addWidget(self.divine_rate_label)
+
+        chaos_asset = self.asset_service.get_asset_by_name("Chaos Orb")
+        chaos_icon_path = (
+            self.asset_service.icon_file_path(chaos_asset)
+            if chaos_asset is not None else None
+        )
+        if chaos_icon_path is not None:
+            chaos_icon = QLabel()
+            chaos_icon.setPixmap(
+                QPixmap(str(chaos_icon_path)).scaled(
+                    16, 16,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            rate_row.addWidget(chaos_icon)
+
+        # Directive Q32: a small attribution indicator wherever
+        # market data is shown.
+        attribution_label = QLabel("via poe.ninja")
+        attribution_label.setObjectName("attribution")
+        rate_row.addWidget(attribution_label)
+        rate_row.addStretch()
+
+        corner_layout.addWidget(rate_card, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        header_layout.addLayout(corner_layout)
+        header_layout.setAlignment(
+            corner_layout, Qt.AlignmentFlag.AlignTop
+        )
+
+        self.hideout_title = NeonTitleLabel(
+            "HIDEOUT", self.title_font, target_height=90
+        )
+
+        header_layout.addStretch()
+        header_layout.addWidget(self.hideout_title)
         header_layout.addStretch()
 
         layout.addLayout(header_layout)
@@ -661,8 +1292,18 @@ class GalaxyHideout(QMainWindow):
         # LATEST OPEN TRADES (display-only, not clickable)
         # -----------------------------------------------------
 
-        trades_title = QLabel("LATEST OPEN TRADES")
-        trades_title.setObjectName("sectionTitle")
+        # Matches the "HIDEOUT" title's font/treatment (Hugo's
+        # request), at a much smaller size — texture chips are fixed
+        # in absolute px so they'd swamp text this small, hence
+        # disabled per-instance here. Outline bumped 25% over the
+        # plain proportional scale-down, per-instance only (doesn't
+        # affect HIDEOUT's own outline).
+        trades_title = NeonTitleLabel(
+            "OPEN TRADES", self.title_font, target_height=25
+        )
+        trades_title.TEXTURE_ENABLED = False
+        trades_title.OUTLINE_WIDTH = NeonTitleLabel.OUTLINE_WIDTH * 1.25
+        trades_title.set_target_height(25)
 
         layout.addWidget(trades_title)
 
@@ -675,8 +1316,14 @@ class GalaxyHideout(QMainWindow):
         # RECENT ACTIVITY (last 5 BUY/SELL only)
         # -----------------------------------------------------
 
-        activity_title = QLabel("RECENT ACTIVITY")
-        activity_title.setObjectName("sectionTitle")
+        # Same NeonTitleLabel treatment as OPEN TRADES (Hugo's
+        # request — overrides the earlier plain-QLabel font/color).
+        activity_title = NeonTitleLabel(
+            "RECENT ACTIVITY", self.title_font, target_height=25
+        )
+        activity_title.TEXTURE_ENABLED = False
+        activity_title.OUTLINE_WIDTH = NeonTitleLabel.OUTLINE_WIDTH * 1.25
+        activity_title.set_target_height(25)
 
         layout.addWidget(activity_title)
 
@@ -687,26 +1334,6 @@ class GalaxyHideout(QMainWindow):
 
         # Space reserved for future Hideout additions.
         layout.addStretch()
-
-        # -----------------------------------------------------
-        # DIVINE RATE CORNER
-        # -----------------------------------------------------
-
-        rate_layout = QHBoxLayout()
-        rate_layout.addStretch()
-
-        self.divine_rate_label = QLabel("")
-        self.divine_rate_label.setObjectName("divineRateCorner")
-
-        rate_layout.addWidget(self.divine_rate_label)
-
-        # Directive Q32: a small attribution indicator wherever
-        # market data is shown.
-        attribution_label = QLabel("via poe.ninja")
-        attribution_label.setObjectName("attribution")
-        rate_layout.addWidget(attribution_label)
-
-        layout.addLayout(rate_layout)
 
         return hideout
 
@@ -733,7 +1360,7 @@ class GalaxyHideout(QMainWindow):
 
         clear_layout(self.hideout_trades_grid)
 
-        latest_trades = service.latest_open_trades(6)
+        latest_trades = service.latest_open_trades(8)
 
         if not latest_trades:
             self.hideout_trades_grid.addWidget(
@@ -741,30 +1368,49 @@ class GalaxyHideout(QMainWindow):
                 0, 0, 1, 3
             )
         else:
+            last_column = 0
             for index, trade in enumerate(latest_trades):
                 card = build_trade_card(trade, interactive=False)
 
                 row = index // 3
                 column = index % 3
+                last_column = max(last_column, column)
 
                 self.hideout_trades_grid.addWidget(card, row, column)
 
+            # Same left-pin fix as Recent Activity — a trailing stretch
+            # column absorbs leftover width instead of the grid
+            # spreading real cards across the full row.
+            self.hideout_trades_grid.setColumnStretch(last_column + 1, 1)
+
         clear_layout(self.activity_grid)
 
-        activity = service.recent_activity(5)
+        activity = service.recent_activity(6)
 
         if not activity:
             self.activity_grid.addWidget(
                 build_empty_state("No activity yet."),
-                0, 0, 1, 5
+                0, 0, 1, 3
             )
         else:
+            # Column-major fill (Hugo's request: 1357 / 2468) — down
+            # each column before moving to the next, 2 rows tall.
+            last_column = 0
             for index, entry in enumerate(activity):
                 card = build_transaction_card(entry, self.asset_service)
-                self.activity_grid.addWidget(card, 0, index)
+                row = index % 2
+                column = index // 2
+                last_column = max(last_column, column)
+                self.activity_grid.addWidget(card, row, column)
 
-        self.divine_rate_label.setText(
-            f"◈ {service.divine_rate}"
+            # A trailing stretch column absorbs the leftover width so
+            # the cards hug the left instead of QGridLayout spreading
+            # them evenly across the full row (Hugo's request).
+            self.activity_grid.setColumnStretch(last_column + 1, 1)
+
+        self.divine_rate_label.setText(str(service.divine_rate))
+        self.gold_spent_label.setText(
+            f"{service.total_gold_spent_this_league():,}"
         )
 
     # =========================================================
@@ -947,17 +1593,6 @@ class GalaxyHideout(QMainWindow):
                 border: none;
             }
 
-            #hideoutTitle {
-                font-family: __DISPLAY_FONT__;
-                font-size: 28px;
-                font-weight: bold;
-                color: #f0ecff;
-                letter-spacing: 3px;
-                border: 1px solid #35304f;
-                border-radius: 8px;
-                padding: 8px 18px;
-            }
-
             #sectionTitle {
                 font-family: __DISPLAY_FONT__;
                 font-size: 17px;
@@ -976,8 +1611,18 @@ class GalaxyHideout(QMainWindow):
                 border-radius: 6px;
             }
 
+            /* Hideout-only: black with a bit of see-through, so the
+               nebula background shows faintly behind them (Hugo's
+               request) — scoped so Faustus/Trades/Analytics cards
+               elsewhere, sitting on a solid panel, are untouched. */
+            #hideout #summaryBox,
+            #hideout #tradeCard {
+                background: rgba(0, 0, 0, 0.78);
+                border: 1px solid rgba(53, 48, 79, 0.6);
+            }
+
             #summaryTitle {
-                color: #9490b8;
+                color: #d4af6a;
                 font-size: 12px;
                 font-weight: bold;
                 letter-spacing: 1px;
@@ -999,15 +1644,21 @@ class GalaxyHideout(QMainWindow):
             }
 
             #divineRateCorner {
-                color: #a8a0d8;
+                color: #ffffff;
                 font-size: 13px;
                 font-weight: bold;
             }
 
             #attribution {
-                color: #55506f;
+                color: #ffffff;
                 font-size: 10px;
                 margin-left: 6px;
+            }
+
+            #rateChip {
+                background: rgba(10, 9, 18, 0.7);
+                border: 1px solid #35304f;
+                border-radius: 6px;
             }
 
             QPushButton#sidebarItem {
@@ -2269,8 +2920,10 @@ class TransactionRow(QFrame):
             else ""
         )
 
+        type_display = TRANSACTION_TYPE_DISPLAY[transaction["type"]]
+
         return (
-            f"{transaction['type']:<5} "
+            f"{type_display:<6} "
             f"{transaction['item']} x{transaction['quantity']}    "
             f"{transaction['total_chaos']:,}c{profit_part}    "
             f"{transaction['timestamp']}"

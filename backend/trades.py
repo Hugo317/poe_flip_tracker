@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from backend.db.models import (
     DivineRate,
@@ -201,6 +201,12 @@ class TradeService:
             )
         )
         self.session.commit()
+
+    def total_gold_spent_this_league(self):
+        return self.session.execute(
+            select(func.coalesce(func.sum(Trade.gold_spent), 0))
+            .where(Trade.league_id == self.league.id)
+        ).scalar_one()
 
     def divine_to_chaos(self, divine_amount):
         return divine_amount * self.divine_rate
