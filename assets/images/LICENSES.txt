@@ -1,0 +1,24 @@
+Hideout animated background — image sources and licenses
+==========================================================
+
+galaxy_pillars_of_creation.png
+  "Pillars of Creation" (JWST NIRCam), NASA/ESA/CSA/STScI
+  Source: https://science.nasa.gov/asset/webb/pillars-of-creation-nircam-image/
+  License: NASA public domain (U.S. government work, not copyrighted).
+  Credit appreciated, not required: NASA, ESA, CSA, STScI.
+
+stars_small.png, stars_bright.png
+  "Stars – Parallax Backgrounds" by Bonsaiheldin
+  Source: https://opengameart.org/content/stars-parallax-backgrounds
+  License: CC0 1.0 (public domain). Credit appreciated, not required:
+  Bonsaiheldin | http://bonsaiheld.org
+
+dust_vapor.png
+  "Smoke Vapor Particles" by Fupi (smoke1.png)
+  Source: https://opengameart.org/content/smoke-vapor-particles
+  License: CC0 1.0 (public domain).
+
+All four images are safe to bundle and redistribute with the app —
+no attribution requirement, unlike the SoundCloud-sourced sound files
+(see assets/sounds/ — those stay local-only for exactly the opposite
+reason).
