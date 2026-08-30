@@ -11,10 +11,3 @@ build/
 dist/
 
 .pytest_cache/
-
-# Personal sound files — license status unconfirmed (sourced from a
-# SoundCloud account, not verified as reusable/redistributable), so
-# these stay local-only. The committed *.wav placeholders in
-# assets/sounds/ are the safe default; SoundPlayer prefers a local
-# *.mp3 with the same base name when one exists.
-assets/sounds/*.mp3
