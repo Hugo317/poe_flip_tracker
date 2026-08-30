@@ -1,10 +1,30 @@
+import io
 import sys
 from pathlib import Path
 
+from PIL import Image, ImageEnhance
 from sqlalchemy import select
 
 from backend.db.models import Asset, _now
 from backend.providers.poe_ninja import PoeNinjaProvider, PoeNinjaUnavailable
+
+# poe.ninja's currency/item art is quite dark and muted at the small
+# sizes it's shown at in the UI (Hugo's request) — boosted once here,
+# at cache time, rather than on every render.
+ICON_BRIGHTNESS = 1.20
+ICON_CONTRAST = 1.05
+ICON_SATURATION = 1.20
+
+
+def _vivify_icon(image_bytes):
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+    image = ImageEnhance.Brightness(image).enhance(ICON_BRIGHTNESS)
+    image = ImageEnhance.Contrast(image).enhance(ICON_CONTRAST)
+    image = ImageEnhance.Color(image).enhance(ICON_SATURATION)
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 def get_image_cache_dir():
@@ -110,6 +130,8 @@ class AssetService:
             image_bytes = self.provider.download_image(asset.icon_url)
         except PoeNinjaUnavailable:
             return
+
+        image_bytes = _vivify_icon(image_bytes)
 
         filename = f"{asset.external_id}.png"
 

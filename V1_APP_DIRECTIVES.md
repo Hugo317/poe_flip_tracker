@@ -300,7 +300,8 @@ The user should be able to inspect individual transaction details.
 
 # 13. Recent Activity
 
-Hideout Recent Activity shows the **last 5 BUY or SELL transactions**.
+Hideout Recent Activity shows the **last 6 BUY or SELL transactions**
+(revised from 5 — see Implementation Updates at the end of this doc).
 
 Do not include:
 
@@ -1765,3 +1766,27 @@ The objective is for this document to contain approximately 95% of the project's
 48 yes sir but leave all styling for later lets build a function Ning app and then polish 
 49 yes
 50 after the app is working as intended we will style it 
+
+---
+
+## Implementation Updates (post-styling-pass revisions)
+
+The following supersede specific answers/prose above — made during the
+Hideout visual styling pass, after the app was functionally complete.
+Kept as an addendum rather than editing the original answers, so the
+history of what was originally decided (and when priorities changed)
+stays intact.
+
+- **Q44 — Divine rate corner position**: originally locked as
+  "bottom corner." Moved to the **top-left corner** (now paired with
+  a gold-spent-this-league display, each in its own card). Deliberate
+  visual-layout decision, not drift.
+- **Q44 — Latest open trades count**: originally locked at 6. Now **8**.
+- **Directive 13 — Recent Activity count**: originally 5. Now **6**
+  (see inline note above).
+- **Directive 16.1 / 38 — Startup sequence**: originally specified as
+  three sequential screens (League → Divine Rate → New Day/Continue).
+  Implemented instead as a **single merged startup dialog** covering
+  all three. Confirmed as the intended behavior going forward — faster
+  to click through, no information lost — rather than a structural gap
+  to fix.
