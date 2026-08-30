@@ -18,7 +18,13 @@ dust_vapor.png
   Source: https://opengameart.org/content/smoke-vapor-particles
   License: CC0 1.0 (public domain).
 
-All four images are safe to bundle and redistribute with the app —
+papiro.png
+  "Parchment Paper Background"
+  Source: https://www.publicdomainpictures.net/en/view-image.php?image=630035&picture=parchment-paper-background
+  License: Public domain (publicdomainpictures.net). Used as the
+  Faustus/Stash/Trades/Analytics/Settings overlay window background.
+
+All five images are safe to bundle and redistribute with the app —
 no attribution requirement, unlike the SoundCloud-sourced sound files
 (see assets/sounds/ — those stay local-only for exactly the opposite
 reason).

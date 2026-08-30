@@ -10,6 +10,10 @@ PySide6==6.10.1
 SQLAlchemy==2.0.52
 alembic==1.19.1
 
+# Icon post-processing (poe.ninja's currency/item art is dark and
+# muted at the sizes it's shown at — boosted once at cache time)
+Pillow==12.3.0
+
 # Testing (directive 42 — accounting must be testable independently
 # of the GUI; see tests/)
 pytest==9.1.1

@@ -153,6 +153,36 @@ class TradeService:
             .order_by(TradingDay.id.desc())
         ).scalars().all()
 
+    def all_trading_days(self):
+        """Every Trading Day for this league (closed and the current
+        open one), oldest first — the backbone for the Analytics
+        "Last 7 Days"/"All" scopes and the profit-over-time chart."""
+        return self.session.execute(
+            select(TradingDay)
+            .where(TradingDay.league_id == self.league.id)
+            .order_by(TradingDay.id.asc())
+        ).scalars().all()
+
+    def last_n_trading_day_ids(self, n):
+        days = self.all_trading_days()
+        return [day.id for day in days[-n:]]
+
+    def profit_over_time(self):
+        """(label, profit) per Trading Day, oldest first. Closed days
+        use their frozen snapshot (never recomputed); the current open
+        day uses a live analytics_summary() call."""
+        points = []
+
+        for day in self.all_trading_days():
+            if day.closed_at is not None:
+                profit = day.snapshot_realized_profit or 0
+            else:
+                profit = self.analytics_summary(day.id)["today_profit"]
+
+            points.append((day.started_at[:10], profit))
+
+        return points
+
     # ---------------------------------------------------------------
     # RATES
     # ---------------------------------------------------------------
@@ -533,19 +563,23 @@ class TradeService:
     # ANALYTICS
     # ---------------------------------------------------------------
 
-    def analytics_summary(self, trading_day_id=None):
-        """Everything the Analytics overlay needs for one Trading Day
-        (the current one by default, or any other by id — used both
-        for the live "Today" view and to freeze a historical snapshot
-        when a day closes). ROI and New Trades vs Carry-over Sales
-        follow the locked accounting rules (directive Q18/19): a
-        partially-sold new trade contributes only the sold portion,
-        and Gold is never mixed into trading profit/ROI."""
+    def analytics_summary(self, trading_day_ids=None):
+        """Everything the Analytics page needs for a set of Trading
+        Days (the current one by default; a single id or any iterable
+        of ids otherwise — used for the live "Today" view, a single
+        historical day's frozen snapshot, and the Analytics "Last 7
+        Days"/"All" scopes, which just aggregate over more ids). ROI
+        and New Trades vs Carry-over Sales follow the locked
+        accounting rules (directive Q18/19): a partially-sold new
+        trade contributes only the sold portion, and Gold is never
+        mixed into trading profit/ROI."""
 
-        today_id = (
-            trading_day_id if trading_day_id is not None
-            else self.trading_day.id
-        )
+        if trading_day_ids is None:
+            trading_day_ids = {self.trading_day.id}
+        elif isinstance(trading_day_ids, int):
+            trading_day_ids = {trading_day_ids}
+        else:
+            trading_day_ids = set(trading_day_ids)
 
         all_trades = self.session.execute(
             select(Trade).where(Trade.league_id == self.league.id)
@@ -553,12 +587,12 @@ class TradeService:
 
         new_trades_today = [
             trade for trade in all_trades
-            if trade.trading_day_id == today_id
+            if trade.trading_day_id in trading_day_ids
         ]
         new_trade_ids = {trade.id for trade in new_trades_today}
 
         today_sales = self.session.execute(
-            select(Sale).where(Sale.trading_day_id == today_id)
+            select(Sale).where(Sale.trading_day_id.in_(trading_day_ids))
         ).scalars().all()
 
         new_trade_sales = [
@@ -588,13 +622,27 @@ class TradeService:
             trade for trade in all_trades
             if not trade.is_open
             and any(
-                sale.trading_day_id == today_id
+                sale.trading_day_id in trading_day_ids
                 for sale in trade.sales
             )
         ]
         completed_trades_today = len(closed_today_trades)
         average_profit_per_trade = (
             sum(trade.realized_profit for trade in closed_today_trades)
+            / completed_trades_today
+            if completed_trades_today else 0
+        )
+
+        trade_rois = [
+            trade.realized_profit / trade.invested_chaos
+            for trade in closed_today_trades
+            if trade.invested_chaos
+        ]
+        average_roi_per_trade = (
+            sum(trade_rois) / len(trade_rois) if trade_rois else 0
+        )
+        win_rate = (
+            sum(1 for trade in closed_today_trades if trade.realized_profit > 0)
             / completed_trades_today
             if completed_trades_today else 0
         )
@@ -626,6 +674,17 @@ class TradeService:
             entry["revenue"] += sale.total_chaos
             entry["cost"] += sale.cost_chaos
             entry["profit"] += sale.profit
+
+        for entry in item_performance.values():
+            entry["roi"] = (
+                entry["profit"] / entry["cost"] if entry["cost"] else 0
+            )
+            # Average price actually paid per unit for the sold
+            # portion — used by the ROI-vs-price correlation chart.
+            entry["avg_buy_price"] = (
+                entry["cost"] / entry["quantity_sold"]
+                if entry["quantity_sold"] else 0
+            )
 
         item_performance_list = sorted(
             item_performance.values(),
@@ -659,6 +718,8 @@ class TradeService:
             ),
             "completed_trades_today": completed_trades_today,
             "average_profit_per_trade": average_profit_per_trade,
+            "average_roi_per_trade": average_roi_per_trade,
+            "win_rate": win_rate,
             "gold_spent_today": gold_spent_today,
             "gold_received_today": gold_received_today,
             "total_realized_profit": self.total_realized_profit(),

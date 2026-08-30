@@ -32,6 +32,10 @@ from PySide6.QtGui import (
     QFontDatabase, QIcon, QPixmap, QPainter, QColor, QTransform,
     QPainterPath, QFont, QFontMetrics, QPen, QLinearGradient, QBrush,
 )
+from PySide6.QtCharts import (
+    QChart, QChartView, QBarSeries, QBarSet, QBarCategoryAxis,
+    QValueAxis, QLineSeries, QScatterSeries,
+)
 
 from backend.trades import TradeService, TradeHasSalesError
 from backend.assets_service import AssetService
@@ -67,6 +71,14 @@ TRANSACTION_TYPE_DISPLAY = {
 
 SIDEBAR_WIDTH_EXPANDED = 180
 SIDEBAR_WIDTH_COLLAPSED = 64
+
+# The window's true left edge sits WINDOW_EDGE_MARGIN before content
+# starts. The sidebar must be inset by the same amount from the true
+# right edge — otherwise it sits flush against the edge while content
+# on the left has real breathing room, making the window look
+# uncentered (Hugo's request: equal margin on both sides, sidebar or
+# not).
+WINDOW_EDGE_MARGIN = 20
 
 # Overlay covers this fraction of the content area, centered,
 # leaving a Hideout border visible around it.
@@ -181,11 +193,11 @@ def build_transaction_card(transaction, asset_service):
 
     card = QFrame()
     card.setObjectName("tradeCard")
-    card.setFixedWidth(190)
+    card.setFixedWidth(210)
 
     layout = QVBoxLayout(card)
-    layout.setContentsMargins(10, 8, 10, 8)
-    layout.setSpacing(6)
+    layout.setContentsMargins(10, 13, 10, 12)
+    layout.setSpacing(9)
 
     header_row = QHBoxLayout()
 
@@ -197,6 +209,7 @@ def build_transaction_card(transaction, asset_service):
 
     if icon_path is not None:
         header_icon = QLabel()
+        header_icon.setFixedSize(20, 20)
         header_icon.setPixmap(
             QPixmap(str(icon_path)).scaled(
                 20, 20,
@@ -233,6 +246,7 @@ def build_transaction_card(transaction, asset_service):
 
     if icon_path is not None:
         price_icon = QLabel()
+        price_icon.setFixedSize(20, 20)
         price_icon.setPixmap(
             QPixmap(str(icon_path)).scaled(
                 20, 20,
@@ -249,6 +263,7 @@ def build_transaction_card(transaction, asset_service):
 
     price_label = QLabel(price_text)
     price_label.setObjectName("tradeInfo")
+    price_label.setWordWrap(True)
     price_row.addWidget(price_label)
     price_row.addStretch()
 
@@ -321,37 +336,6 @@ def populate_confirm_card(layout, asset_service, item_name, type_label, price_li
         row.addWidget(value)
 
         layout.addLayout(row)
-
-
-def build_history_day_card(trading_day, on_click):
-
-    card = QFrame()
-    card.setObjectName("tradeCard")
-
-    layout = QVBoxLayout(card)
-    layout.setContentsMargins(10, 8, 10, 8)
-    layout.setSpacing(6)
-
-    date_label = QLabel(trading_day.started_at.split(" ")[0])
-    date_label.setObjectName("tradeTitle")
-    layout.addWidget(date_label)
-
-    profit = trading_day.snapshot_realized_profit or 0
-    profit_label = QLabel(f"Profit: {profit:+,}c")
-    profit_label.setObjectName("tradeInfo")
-    layout.addWidget(profit_label)
-
-    roi_percent = (trading_day.snapshot_roi or 0) * 100
-    roi_label = QLabel(f"% Return: {roi_percent:+.1f}%")
-    roi_label.setObjectName("tradeInfo")
-    layout.addWidget(roi_label)
-
-    view_button = QPushButton("VIEW")
-    view_button.setObjectName("fauxTab")
-    view_button.clicked.connect(lambda: on_click(trading_day))
-    layout.addWidget(view_button)
-
-    return card
 
 
 def build_summary_box(title):
@@ -580,7 +564,7 @@ class NeonTitleLabel(QWidget):
     def __init__(self, text, font_family_qss, target_height=90, parent=None):
         super().__init__(parent)
 
-        self._text = text
+        self._lines = text.split("\n")
         self._primary_family = (
             font_family_qss.split(",")[0].strip().strip("'\"")
         )
@@ -598,14 +582,22 @@ class NeonTitleLabel(QWidget):
 
         self.set_target_height(target_height)
 
+    def set_text(self, text):
+        """Swaps the text (e.g. the sidebar title toggling between
+        "D\\nF" collapsed and "DIVINE\\nFLIPPER" expanded) — call
+        set_target_height afterward to resize for the new content."""
+        self._lines = text.split("\n")
+        self.update()
+
     def set_target_height(self, target_height, max_width=None):
-        """Resizes the widget so the painted glyphs' cap-height equals
-        `target_height` px, back-solving the QFont point size from a
-        reference size (font-metric height scales ~linearly with
-        point size for a given family). If the resulting text would be
-        wider than `max_width`, scales back down to fit — different
-        fonts have very different width-to-cap-height ratios, so a
-        height-only fit can otherwise run off the window edge."""
+        """Resizes the widget so each line's painted glyphs have a
+        cap-height of `target_height` px, back-solving the QFont point
+        size from a reference size (font-metric height scales
+        ~linearly with point size for a given family). If the
+        resulting text would be wider than `max_width`, scales back
+        down to fit — different fonts have very different
+        width-to-cap-height ratios, so a height-only fit can otherwise
+        run off the window edge."""
 
         reference_point_size = 100
         reference_font = QFont(self._primary_family)
@@ -636,43 +628,79 @@ class NeonTitleLabel(QWidget):
             font.setWeight(QFont.Weight.Normal)
             font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 4)
             metrics = QFontMetrics(font)
-            text_rect = metrics.boundingRect(self._text)
-            return font, text_rect
 
-        self._font, text_rect = build(point_size)
+            if len(self._lines) == 1:
+                text_rect = metrics.boundingRect(self._lines[0])
+                width = (
+                    text_rect.width()
+                    + self._extra_gap_total(self._lines[0])
+                )
+                height = text_rect.height()
+            else:
+                width = max(
+                    metrics.boundingRect(line).width()
+                    + self._extra_gap_total(line)
+                    for line in self._lines
+                )
+                height = metrics.height() * len(self._lines)
+
+            return font, width, height
+
+        self._font, width, height = build(point_size)
 
         if max_width is not None:
-            full_width = text_rect.width() + margin * 2
+            full_width = width + margin * 2
             if full_width > max_width:
                 point_size = max(
                     10, round(point_size * (max_width / full_width))
                 )
-                self._font, text_rect = build(point_size)
+                self._font, width, height = build(point_size)
 
-        self.setFixedSize(
-            text_rect.width() + margin * 2 + self._extra_gap_total(),
-            text_rect.height() + margin * 2
-        )
+        self.setFixedSize(width + margin * 2, height + margin * 2)
         self.update()
 
-    def _extra_gap_total(self):
+    def _extra_gap_total(self, line):
         total = 0
-        for i in range(1, len(self._text)):
-            pair = (self._text[i - 1], self._text[i])
+        for i in range(1, len(line)):
+            pair = (line[i - 1], line[i])
             total += self.EXTRA_GAP_PAIRS.get(pair, 0)
         return total
 
-    def _gap_split(self):
+    def _gap_split(self, line):
         """Index/gap-width of the first EXTRA_GAP_PAIRS match in the
-        text, so paintEvent can draw it as two separate runs with a
+        line, so paintEvent can draw it as two separate runs with a
         manual gap between them — everything else stays a single
         Qt-shaped run, so normal letter-spacing is untouched."""
 
-        for i in range(1, len(self._text)):
-            pair = (self._text[i - 1], self._text[i])
+        for i in range(1, len(line)):
+            pair = (line[i - 1], line[i])
             if pair in self.EXTRA_GAP_PAIRS:
                 return i, self.EXTRA_GAP_PAIRS[pair]
         return None, 0
+
+    def _add_line_to_path(self, path, line, y, metrics):
+        """Adds one horizontally-centered line of glyphs to `path` at
+        baseline `y` — centered from the same ink bounding box used to
+        size the widget in set_target_height (using
+        horizontalAdvance() instead, which includes the
+        letter-spacing tail after the last glyph, previously clipped
+        the last character since the box was never sized to fit it)."""
+
+        text_rect = metrics.boundingRect(line)
+        extra_gap_total = self._extra_gap_total(line)
+        x = (
+            (self.width() - text_rect.width() - extra_gap_total) / 2
+            - text_rect.left()
+        )
+
+        split_index, gap = self._gap_split(line)
+        if split_index is None:
+            path.addText(x, y, self._font, line)
+        else:
+            first, second = line[:split_index], line[split_index:]
+            path.addText(x, y, self._font, first)
+            second_x = x + metrics.horizontalAdvance(first) + gap
+            path.addText(second_x, y, self._font, second)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -681,33 +709,25 @@ class NeonTitleLabel(QWidget):
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
             metrics = QFontMetrics(self._font)
-            # Centered from the same ink bounding box used to size the
-            # widget in set_target_height — using horizontalAdvance()
-            # here instead (which includes the letter-spacing tail
-            # after the last glyph) previously clipped the last
-            # character(s), since the box was never sized to fit it.
-            text_rect = metrics.boundingRect(self._text)
-            extra_gap_total = self._extra_gap_total()
-            x = (
-                (self.width() - text_rect.width() - extra_gap_total) / 2
-                - text_rect.left()
-            )
-            y = (
-                (self.height() + metrics.ascent() - metrics.descent())
-                / 2
-            )
-
             path = QPainterPath()
-            split_index, gap = self._gap_split()
-            if split_index is None:
-                path.addText(x, y, self._font, self._text)
-            else:
-                first, second = (
-                    self._text[:split_index], self._text[split_index:]
+
+            if len(self._lines) == 1:
+                y = (
+                    (self.height() + metrics.ascent() - metrics.descent())
+                    / 2
                 )
-                path.addText(x, y, self._font, first)
-                second_x = x + metrics.horizontalAdvance(first) + gap
-                path.addText(second_x, y, self._font, second)
+                self._add_line_to_path(path, self._lines[0], y, metrics)
+            else:
+                line_height = metrics.height()
+                total_text_height = line_height * len(self._lines)
+                start_y = (
+                    (self.height() - total_text_height) / 2
+                    + metrics.ascent()
+                )
+                for i, line in enumerate(self._lines):
+                    self._add_line_to_path(
+                        path, line, start_y + i * line_height, metrics
+                    )
 
             cracks = []
             visible_path = path
@@ -892,6 +912,73 @@ class HoverSidebar(QFrame):
         super().leaveEvent(event)
 
 
+SIDEBAR_ITEM_BASE_STYLE = """
+    border-radius: 5px;
+    min-height: 36px;
+    padding: 0px;
+    outline: none;
+"""
+
+# Scoped to QPushButton specifically — an unscoped/bare property list
+# in a per-widget setStyleSheet() call cascades down into this
+# button's own child QLabels (the icon/text), painting a second,
+# smaller border+background around just them. Scoping by type keeps
+# the box on the button itself only.
+SIDEBAR_ITEM_HOVER_STYLE = "QPushButton {" + SIDEBAR_ITEM_BASE_STYLE + """
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-left: 3px solid #9a7526;
+}"""
+
+SIDEBAR_ITEM_CHECKED_HOVER_STYLE = "QPushButton {" + SIDEBAR_ITEM_BASE_STYLE + """
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(212, 175, 55, 0.32),
+        stop:1 rgba(212, 175, 55, 0.10)
+    );
+    border: 1px solid #e0b34d;
+    border-left: 3px solid #f0d78a;
+}"""
+
+
+class SidebarButton(QPushButton):
+    """Qt's `:hover` stylesheet pseudo-class turned out to be
+    unreliable here — hover only ever started rendering after some
+    unrelated event (a click, the overlay closing) happened to force
+    a style re-polish, so it never worked from a plain mouse-over.
+    Rather than fight Qt's polish timing, this drives the hover look
+    directly off real enter/leave events with an explicit per-widget
+    stylesheet, bypassing `:hover` matching entirely — the base/
+    checked-but-not-hovered look still comes from the shared
+    `#sidebarItem` stylesheet rules."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A click toggles `checked` while the cursor is still sitting
+        # on the button (no leave/enter pair happens) — without this,
+        # it would keep showing the plain-hover look instead of
+        # switching to the brighter checked+hover one until the mouse
+        # next left and re-entered.
+        self.toggled.connect(self._refresh_hover_style)
+
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        self._refresh_hover_style()
+
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        self.setStyleSheet("")
+
+    def _refresh_hover_style(self):
+        if not self.underMouse():
+            return
+
+        self.setStyleSheet(
+            SIDEBAR_ITEM_CHECKED_HOVER_STYLE
+            if self.isChecked() else SIDEBAR_ITEM_HOVER_STYLE
+        )
+
+
 IMAGES_DIR = Path(__file__).resolve().parent.parent / "assets" / "images"
 
 
@@ -1065,17 +1152,25 @@ class GalaxyHideout(QMainWindow):
         # app.
         main_layout = QHBoxLayout(central)
         main_layout.setContentsMargins(
-            20, 20, 20 + SIDEBAR_WIDTH_COLLAPSED + 15, 20
+            WINDOW_EDGE_MARGIN, WINDOW_EDGE_MARGIN,
+            WINDOW_EDGE_MARGIN + SIDEBAR_WIDTH_COLLAPSED + 15,
+            WINDOW_EDGE_MARGIN
         )
         main_layout.setSpacing(15)
 
-        self.content_area = ContentArea(
-            overlay_ratio=OVERLAY_SIZE_RATIO
-        )
+        self.content_area = ContentArea()
 
         self.hideout = self._build_hideout()
         self.content_area.set_hideout(self.hideout)
 
+        main_layout.addWidget(self.content_area)
+
+        # Parented directly to `central`, not `content_area` — an
+        # overlay centered within content_area (which is itself
+        # shifted left by the sidebar's reserved gutter) ends up
+        # visibly off-center relative to the true window. Centering
+        # it against central's real geometry instead fixes that
+        # (Hugo's request — see _position_overlay).
         self.overlay = OverlayPanel(
             trade_service=self.trade_service,
             asset_service=self.asset_service,
@@ -1084,9 +1179,8 @@ class GalaxyHideout(QMainWindow):
             on_trade_changed=self.refresh_all,
             on_close=self._close_overlay
         )
-        self.content_area.set_overlay(self.overlay)
-
-        main_layout.addWidget(self.content_area)
+        self.overlay.setParent(central)
+        self.overlay.hide()
 
         sidebar = self._build_sidebar()
         sidebar.setParent(central)
@@ -1116,6 +1210,10 @@ class GalaxyHideout(QMainWindow):
             gap * 0.9 * 0.65 * 0.7, max_width=max_width
         )
 
+        self.corner_widget.adjustSize()
+        self.corner_widget.move(20, 20)
+        self.corner_widget.raise_()
+
     def _position_sidebar(self):
         central = self._central
         width = self.sidebar.width()
@@ -1125,10 +1223,32 @@ class GalaxyHideout(QMainWindow):
         )
         self.sidebar.raise_()
 
+    def _position_overlay(self):
+        # Reserves the sidebar's EXPANDED width on both sides (not
+        # just collapsed) so the overlay is symmetric relative to the
+        # true window and never ends up under the sidebar even when
+        # it's hovered open mid-use (Hugo's request).
+        central = self._central
+        reserved = WINDOW_EDGE_MARGIN + SIDEBAR_WIDTH_EXPANDED + 15
+
+        frame_width = central.width() - 2 * reserved
+        frame_height = central.height() - 2 * WINDOW_EDGE_MARGIN
+
+        width = int(frame_width * OVERLAY_SIZE_RATIO)
+        height = int(frame_height * OVERLAY_SIZE_RATIO)
+
+        x = reserved + (frame_width - width) // 2
+        y = WINDOW_EDGE_MARGIN + (frame_height - height) // 2
+
+        self.overlay.setGeometry(x, y, width, height)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._position_sidebar()
         self.nebula_background.setGeometry(self._central.rect())
+
+        if self.overlay.isVisible():
+            self._position_overlay()
 
     # =========================================================
     # HIDEOUT (permanent background / HUD)
@@ -1140,8 +1260,8 @@ class GalaxyHideout(QMainWindow):
         hideout.setObjectName("hideout")
 
         layout = QVBoxLayout(hideout)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        layout.setContentsMargins(20, 6, 20, 6)
+        layout.setSpacing(5)
 
         # -----------------------------------------------------
         # HEADER
@@ -1155,7 +1275,18 @@ class GalaxyHideout(QMainWindow):
         # icons either side of the ratio). Each row is its own card
         # (Hugo's request), same black see-through look as the rest
         # of the Hideout's cards, white text.
-        corner_layout = QVBoxLayout()
+        #
+        # This is a floating widget positioned in _fit_hideout_title,
+        # NOT part of header_layout — putting it there earlier made
+        # the title's centering lopsided (the two addStretch() calls
+        # around the title balanced the *leftover* space, not the
+        # true width, since this block only ate into one side).
+        # Floating it means the title's [stretch][title][stretch] is
+        # symmetric regardless of this block's size (Hugo's request:
+        # re-center the Hideout title).
+        self.corner_widget = QWidget(hideout)
+        corner_layout = QVBoxLayout(self.corner_widget)
+        corner_layout.setContentsMargins(0, 0, 0, 0)
         corner_layout.setSpacing(6)
 
         gold_card = QFrame()
@@ -1245,11 +1376,6 @@ class GalaxyHideout(QMainWindow):
 
         corner_layout.addWidget(rate_card, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        header_layout.addLayout(corner_layout)
-        header_layout.setAlignment(
-            corner_layout, Qt.AlignmentFlag.AlignTop
-        )
-
         self.hideout_title = NeonTitleLabel(
             "HIDEOUT", self.title_font, target_height=90
         )
@@ -1328,7 +1454,7 @@ class GalaxyHideout(QMainWindow):
         layout.addWidget(activity_title)
 
         self.activity_grid = QGridLayout()
-        self.activity_grid.setSpacing(12)
+        self.activity_grid.setSpacing(6)
 
         layout.addLayout(self.activity_grid)
 
@@ -1433,23 +1559,67 @@ class GalaxyHideout(QMainWindow):
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(12)
 
-        title = QLabel("")
-        title.setObjectName("title")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Matches the HIDEOUT title's treatment (Hugo's request), at a
+        # small size. Texture chips are fixed in absolute px so
+        # they'd swamp text this small, hence disabled per-instance.
+        title = NeonTitleLabel("D\nF", self.title_font, target_height=14)
+        title.TEXTURE_ENABLED = False
         self.sidebar_title = title
 
-        layout.addWidget(title)
+        title_row = QHBoxLayout()
+        title_row.addStretch()
+        title_row.addWidget(title)
+        title_row.addStretch()
+
+        layout.addLayout(title_row)
         layout.addSpacing(20)
 
         self.sidebar_group = QButtonGroup(self)
         self.sidebar_group.setExclusive(True)
 
+        self.sidebar_labels = {}
+
         for section in SIDEBAR_SECTIONS:
 
-            button = QPushButton()
+            button = SidebarButton()
             button.setObjectName("sidebarItem")
             button.setCheckable(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+            # Qt is supposed to auto-enable hover tracking for any
+            # widget whose stylesheet has a `:hover` rule, but that
+            # detection can silently miss buttons that haven't been
+            # polished/interacted with yet — they then never respond
+            # to hover until something (like a click) forces a
+            # re-polish. Setting this explicitly guarantees hover
+            # works immediately, with no dependency on click history.
+            button.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+
+            # Icon lives in its own fixed-width, fixed-size slot so it
+            # never moves or resizes when the sidebar expands — only
+            # the label's visibility toggles (Hugo's request: icons
+            # were jumping position/size on hover-expand, because the
+            # old version put icon+label in one text string with QSS
+            # flipping both font-size and alignment between states).
+            button_layout = QHBoxLayout(button)
+            button_layout.setContentsMargins(6, 0, 6, 0)
+            button_layout.setSpacing(10)
+
+            icon_label = QLabel(SIDEBAR_ICONS[section])
+            icon_label.setObjectName("sidebarIcon")
+            icon_label.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
+            button_layout.addWidget(icon_label)
+
+            text_label = QLabel(section)
+            text_label.setObjectName("sidebarLabel")
+            text_label.setAlignment(
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
+            self.sidebar_labels[section] = text_label
+            button_layout.addWidget(text_label)
+            button_layout.addStretch()
 
             button.clicked.connect(
                 lambda checked, name=section: self._on_sidebar_clicked(name)
@@ -1465,14 +1635,6 @@ class GalaxyHideout(QMainWindow):
 
         return sidebar
 
-    def _sidebar_button_text(self, section):
-        icon = SIDEBAR_ICONS[section]
-
-        if self.sidebar_collapsed:
-            return icon
-
-        return f"{icon}  {section}"
-
     def _expand_sidebar(self):
         self.sidebar_collapsed = False
         self._apply_sidebar_state()
@@ -1484,16 +1646,21 @@ class GalaxyHideout(QMainWindow):
     def _apply_sidebar_state(self):
         if self.sidebar_collapsed:
             self.sidebar.setFixedWidth(SIDEBAR_WIDTH_COLLAPSED)
-            self.sidebar_title.setText("DF")
+            self.sidebar_title.set_text("D\nF")
+            self.sidebar_title.set_target_height(
+                25, max_width=SIDEBAR_WIDTH_COLLAPSED - 20
+            )
         else:
             self.sidebar.setFixedWidth(SIDEBAR_WIDTH_EXPANDED)
-            self.sidebar_title.setText("DIVINE\nFLIPPER")
+            self.sidebar_title.set_text("DIVINE\nFLIPPER")
+            self.sidebar_title.set_target_height(
+                25, max_width=SIDEBAR_WIDTH_EXPANDED - 30
+            )
 
-        for section, button in self.sidebar_buttons.items():
-            button.setText(self._sidebar_button_text(section))
-            button.setProperty("collapsed", self.sidebar_collapsed)
-            button.style().unpolish(button)
-            button.style().polish(button)
+        for section in self.sidebar_buttons:
+            self.sidebar_labels[section].setVisible(
+                not self.sidebar_collapsed
+            )
 
         self._position_sidebar()
 
@@ -1514,7 +1681,10 @@ class GalaxyHideout(QMainWindow):
 
     def _open_overlay(self, section_name):
         self.overlay.show_section(section_name)
-        self.content_area.raise_overlay()
+        self._position_overlay()
+        self.overlay.show()
+        self.overlay.raise_()
+        self.sidebar.raise_()
 
     def _close_overlay(self):
         self.overlay.hide()
@@ -1545,11 +1715,8 @@ class GalaxyHideout(QMainWindow):
             }
 
             #sidebar {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #14121f, stop:1 #0d0c16
-                );
-                border: 1px solid #35304f;
+                background: rgba(0, 0, 0, 0.78);
+                border: 1px solid rgba(53, 48, 79, 0.6);
                 border-radius: 10px;
             }
 
@@ -1557,38 +1724,35 @@ class GalaxyHideout(QMainWindow):
                 background: transparent;
             }
 
-            #title {
-                font-family: __DISPLAY_FONT__;
-                font-size: 21px;
-                font-weight: bold;
-                color: #d0c8ff;
-                letter-spacing: 2px;
-            }
-
             QLabel {
                 color: #aaaac8;
                 font-size: 14px;
             }
 
+            /* Parchment-toned "ledger box" — the default everywhere
+               these cards sit directly on the overlay's parchment
+               page (Faustus/Stash/Trades/Analytics/Settings). The
+               Hideout keeps its own dark glass-card look via the
+               #hideout-scoped override below. */
             #tradeCard {
-                background: #181828;
-                border: 1px solid #35304f;
+                background: #d8c69a;
+                border: 1px solid #8a6a3c;
                 border-radius: 6px;
             }
 
             #tradeTitle {
-                color: #eeeeff;
+                color: #3b2a18;
                 font-size: 14px;
                 font-weight: bold;
             }
 
             #tradeInfo {
-                color: #aaaac8;
+                color: #5c4630;
                 font-size: 12px;
             }
 
             #cardDivider {
-                background: #35304f;
+                background: #8a6a3c;
                 max-height: 1px;
                 border: none;
             }
@@ -1597,39 +1761,61 @@ class GalaxyHideout(QMainWindow):
                 font-family: __DISPLAY_FONT__;
                 font-size: 17px;
                 font-weight: bold;
-                color: #c7bdff;
+                color: #3b2a18;
                 letter-spacing: 1px;
                 margin-top: 10px;
             }
 
             #summaryBox {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #1c1a30, stop:1 #161425
-                );
-                border: 1px solid #3a3560;
+                background: #d8c69a;
+                border: 1px solid #8a6a3c;
                 border-radius: 6px;
             }
 
             /* Hideout-only: black with a bit of see-through, so the
                nebula background shows faintly behind them (Hugo's
-               request) — scoped so Faustus/Trades/Analytics cards
-               elsewhere, sitting on a solid panel, are untouched. */
+               request) — scoped so the same cards elsewhere (now
+               sitting on the parchment overlay panel) are untouched. */
             #hideout #summaryBox,
             #hideout #tradeCard {
                 background: rgba(0, 0, 0, 0.78);
                 border: 1px solid rgba(53, 48, 79, 0.6);
             }
 
-            #summaryTitle {
+            /* tradeTitle/tradeInfo/cardDivider/summaryTitle/
+               summaryValue default to the dark-ink parchment colors
+               above (Faustus/Stash/Trades/Analytics/Settings);
+               restored to their original light-on-dark colors here
+               specifically for the Hideout's own cards. */
+            #hideout #tradeTitle {
+                color: #eeeeff;
+            }
+
+            #hideout #tradeInfo {
+                color: #aaaac8;
+            }
+
+            #hideout #cardDivider {
+                background: #35304f;
+            }
+
+            #hideout #summaryTitle {
                 color: #d4af6a;
+            }
+
+            #hideout #summaryValue {
+                color: #f0ecff;
+            }
+
+            #summaryTitle {
+                color: #8a4a1e;
                 font-size: 12px;
                 font-weight: bold;
                 letter-spacing: 1px;
             }
 
             #summaryValue {
-                color: #f0ecff;
+                color: #3b2a18;
                 font-size: 22px;
                 font-weight: bold;
             }
@@ -1662,53 +1848,66 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#sidebarItem {
-                color: #a8a4c8;
                 background: transparent;
                 border: 1px solid transparent;
                 border-left: 3px solid transparent;
                 border-radius: 5px;
-                font-size: 14px;
-                font-weight: bold;
-                letter-spacing: 1px;
-                padding: 10px;
-                padding-left: 12px;
-                text-align: left;
+                min-height: 36px;
+                padding: 0px;
+                outline: none;
             }
 
             QPushButton#sidebarItem:hover {
-                color: #eeeeff;
-                background: #1c1a30;
-                border: 1px solid #3a3560;
-                border-left: 3px solid #6a5fd8;
+                background: rgba(212, 175, 55, 0.08);
+                border: 1px solid rgba(212, 175, 55, 0.35);
+                border-left: 3px solid #9a7526;
             }
 
             QPushButton#sidebarItem:checked {
-                color: #f0ecff;
                 background: qlineargradient(
                     x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #2a2650, stop:1 #1c1a30
+                    stop:0 rgba(212, 175, 55, 0.22),
+                    stop:1 rgba(212, 175, 55, 0.05)
                 );
-                border: 1px solid #5a4fc8;
-                border-left: 3px solid #9a8fff;
+                border: 1px solid #c49a3a;
+                border-left: 3px solid #f0d78a;
             }
 
-            QPushButton#sidebarItem[collapsed="true"] {
-                text-align: center;
-                padding-left: 0px;
+            QPushButton#sidebarItem:checked:hover {
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(212, 175, 55, 0.32),
+                    stop:1 rgba(212, 175, 55, 0.10)
+                );
+                border: 1px solid #e0b34d;
+                border-left: 3px solid #f0d78a;
+            }
+
+            /* Icon sits in its own fixed-width slot (set in Python)
+               with a constant font-size, so it never resizes or
+               moves when the sidebar expands — only #sidebarLabel's
+               visibility toggles (Hugo's request). */
+            #sidebarIcon {
                 font-size: 20px;
+                background: transparent;
+            }
+
+            #sidebarLabel {
+                color: #d4af6a;
+                font-size: 14px;
+                font-weight: bold;
+                letter-spacing: 1px;
+                background: transparent;
             }
 
             #overlayPanel {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #17152a, stop:1 #100e1c
-                );
-                border: 1px solid #5a4fc8;
-                border-radius: 12px;
+                background: transparent;
+                border: none;
             }
 
             #overlayTitleBar {
-                border-bottom: 1px solid #3a3560;
+                background: transparent;
+                border-bottom: 1px solid #8a6a3c;
                 padding-bottom: 12px;
             }
 
@@ -1716,28 +1915,30 @@ class GalaxyHideout(QMainWindow):
                 font-family: __DISPLAY_FONT__;
                 font-size: 19px;
                 font-weight: bold;
-                color: #f0ecff;
+                color: #3b2a18;
                 letter-spacing: 2px;
             }
 
             QPushButton#overlayCloseButton {
-                color: #aaaac8;
-                background: #181828;
-                border: 1px solid #3a3560;
-                border-radius: 5px;
-                font-size: 13px;
+                color: #9c2b20;
+                background: transparent;
+                border: none;
+                font-size: 34px;
                 font-weight: bold;
-                padding: 6px 12px;
+                padding: 0px 6px;
             }
 
             QPushButton#overlayCloseButton:hover {
-                color: #eeeeff;
-                border: 1px solid #6a5fd8;
+                color: #d84438;
             }
 
             #overlayPlaceholder {
-                color: #8888a8;
+                color: #5c4630;
                 font-size: 15px;
+            }
+
+            #hideout #overlayPlaceholder {
+                color: #8888a8;
             }
 
             QPushButton#fauxTab {
@@ -1751,9 +1952,9 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#fauxTab:checked {
-                color: #f0ecff;
-                background: #292450;
-                border: 1px solid #6a5fd8;
+                color: #f2f2f5;
+                background: #1c2f52;
+                border: 1px solid #3a5a8c;
             }
 
             QPushButton#fauxTab:disabled {
@@ -1771,23 +1972,23 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#currencyToggle:hover {
-                color: #eeeeff;
-                border: 1px solid #6a5fd8;
+                color: #f2f2f5;
+                border: 1px solid #3a5a8c;
             }
 
             QPushButton#currencyToggle:checked {
-                color: #f0ecff;
-                background: #292450;
-                border: 1px solid #9a8bff;
+                color: #f2f2f5;
+                background: #1c2f52;
+                border: 1px solid #5b8dd9;
             }
 
             QPushButton#primaryButton {
-                color: #0b0b12;
+                color: #f2f2f5;
                 background: qlineargradient(
                     x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #b0a4ff, stop:1 #9a8bff
+                    stop:0 #3a5a8c, stop:1 #16243d
                 );
-                border: 1px solid #9a8bff;
+                border: 1px solid #5b8dd9;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -1796,13 +1997,13 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#primaryButton:hover {
-                background: #c4baff;
+                background: #4a6a9c;
             }
 
             QPushButton#secondaryButton {
-                color: #aaaac8;
+                color: #3b2a18;
                 background: transparent;
-                border: 1px solid #35304f;
+                border: 1px solid #8a6a3c;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -1810,14 +2011,14 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#secondaryButton:hover {
-                color: #eeeeff;
-                border: 1px solid #6a5fd8;
+                color: #f2f2f5;
+                border: 1px solid #3a5a8c;
             }
 
             QPushButton#dangerButton {
-                color: #ff9a9a;
+                color: #9c2b20;
                 background: transparent;
-                border: 1px solid #6a3535;
+                border: 1px solid #9c2b20;
                 border-radius: 5px;
                 font-size: 12px;
                 font-weight: bold;
@@ -1826,18 +2027,18 @@ class GalaxyHideout(QMainWindow):
 
             QPushButton#dangerButton:hover {
                 color: #ffffff;
-                background: #5a1f1f;
-                border: 1px solid #c85a5a;
+                background: #9c2b20;
+                border: 1px solid #d84438;
             }
 
             #formLabel {
-                color: #8888a8;
+                color: #5c4630;
                 font-size: 12px;
                 font-weight: bold;
             }
 
             QPushButton#transactionRow {
-                color: #aaaac8;
+                color: #3b2a18;
                 background: transparent;
                 border: none;
                 text-align: left;
@@ -1846,7 +2047,7 @@ class GalaxyHideout(QMainWindow):
             }
 
             QPushButton#transactionRow:hover {
-                color: #eeeeff;
+                color: #000000;
             }
 
             #tradesScroll {
@@ -1864,7 +2065,7 @@ class GalaxyHideout(QMainWindow):
             }
 
             QComboBox:focus, QSpinBox:focus, QLineEdit:focus {
-                border: 1px solid #6a5fd8;
+                border: 1px solid #5b8dd9;
             }
 
             QComboBox#itemPicker {
@@ -1894,12 +2095,14 @@ class GalaxyHideout(QMainWindow):
 # =============================================================
 
 class ContentArea(QWidget):
+    """Holds the Hideout widget. The overlay used to live here too,
+    but centering it against this widget's own (sidebar-shrunken)
+    geometry made it visibly off-center in the real window — it's now
+    parented directly to `central` and positioned by
+    GalaxyHideout._position_overlay instead."""
 
-    def __init__(self, overlay_ratio, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-
-        self._overlay_ratio = overlay_ratio
-        self._overlay = None
 
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -1907,38 +2110,21 @@ class ContentArea(QWidget):
     def set_hideout(self, hideout_widget):
         self._layout.addWidget(hideout_widget)
 
-    def set_overlay(self, overlay_widget):
-        self._overlay = overlay_widget
-        self._overlay.setParent(self)
-        self._overlay.hide()
-
-    def raise_overlay(self):
-        if self._overlay is not None:
-            self._position_overlay()
-            self._overlay.show()
-            self._overlay.raise_()
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-
-        if self._overlay is not None and self._overlay.isVisible():
-            self._position_overlay()
-
-    def _position_overlay(self):
-        width = int(self.width() * self._overlay_ratio)
-        height = int(self.height() * self._overlay_ratio)
-
-        x = (self.width() - width) // 2
-        y = (self.height() - height) // 2
-
-        self._overlay.setGeometry(x, y, width, height)
-
 
 # =============================================================
 # OVERLAY PANEL
 # =============================================================
 
 class OverlayPanel(QFrame):
+    """The Faustus/Stash/Trades/Analytics/Settings window (Hugo's
+    request): the real papiro.png parchment photo (public domain,
+    see assets/images/LICENSES.txt) clipped to a jagged torn-paper
+    silhouette rather than a clean rounded rect — everything outside
+    that silhouette is left unpainted so the app's own background
+    shows through the torn edge instead of a black window border."""
+
+    PARCHMENT_BASE = QColor("#e8d9b5")
+    PARCHMENT_SEED = 7
 
     def __init__(
         self,
@@ -1956,6 +2142,7 @@ class OverlayPanel(QFrame):
 
         self._on_close = on_close
         self._current_section = None
+        self._papiro = QPixmap(str(IMAGES_DIR / "papiro.png"))
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 15, 20, 20)
@@ -1973,7 +2160,7 @@ class OverlayPanel(QFrame):
 
         title_bar.addStretch()
 
-        close_button = QPushButton("CLOSE")
+        close_button = QPushButton("✕")
         close_button.setObjectName("overlayCloseButton")
         close_button.setCursor(Qt.CursorShape.PointingHandCursor)
         close_button.clicked.connect(self._handle_close)
@@ -2035,7 +2222,10 @@ class OverlayPanel(QFrame):
             self.trades_page.reset_filters()
 
         if section_name == "ANALYTICS":
-            self.analytics_page.show_today()
+            self.analytics_page.reset_to_today()
+
+        if section_name == "FAUSTUS":
+            self.faustus_page._reset_buy_form()
 
     def _sell_from_stash(self, trade):
         self.faustus_page._start_close_trade(trade)
@@ -2054,6 +2244,99 @@ class OverlayPanel(QFrame):
     def hide(self):
         self._current_section = None
         super().hide()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        rect = QRectF(self.rect())
+        silhouette = self._torn_edge_path(rect, inset=2, seed=self.PARCHMENT_SEED)
+
+        # The widget's true rect stays a plain rectangle (layout still
+        # needs it), but nothing is painted outside the torn
+        # silhouette — no "void" fill at all (Hugo's request: no
+        # black window border). Left untouched, those pixels keep
+        # showing whatever the app already painted behind this panel
+        # (the nebula backdrop), since this widget has no
+        # auto-fill/opaque background of its own.
+        if self._papiro.isNull():
+            painter.fillPath(silhouette, self.PARCHMENT_BASE)
+        else:
+            painter.setClipPath(silhouette)
+            painter.drawPixmap(
+                rect, self._papiro, self._cover_source_rect(self._papiro, rect)
+            )
+
+        painter.end()
+
+    @staticmethod
+    def _cover_source_rect(pixmap, target_rect):
+        """The source rect (in `pixmap`'s own coordinates) that, when
+        drawn into `target_rect`, fills it edge-to-edge without
+        distortion — cropping whichever axis overhangs, the same way
+        CSS `background-size: cover` works."""
+
+        pixmap_ratio = pixmap.width() / pixmap.height()
+        target_ratio = target_rect.width() / target_rect.height()
+
+        if pixmap_ratio > target_ratio:
+            width = pixmap.height() * target_ratio
+            x = (pixmap.width() - width) / 2
+            return QRectF(x, 0, width, pixmap.height())
+
+        height = pixmap.width() / target_ratio
+        y = (pixmap.height() - height) / 2
+        return QRectF(0, y, pixmap.width(), height)
+
+    @staticmethod
+    def _torn_edge_path(rect, inset, seed, jaggedness=5.0, notch_chance=0.1, notch_depth=16.0):
+        """A deterministic (fixed-seed, so it doesn't flicker between
+        repaints) irregular rectangle — a torn-paper silhouette rather
+        than a clean rounded rect. Layering several of these at
+        increasing `inset` fakes a burnt gradient ring around a flat
+        center without needing radial gradients on an irregular
+        shape."""
+
+        left = rect.left() + inset
+        top = rect.top() + inset
+        right = rect.right() - inset
+        bottom = rect.bottom() - inset
+
+        rng = random.Random(seed)
+        step = 16.0
+
+        def edge_points(x0, y0, x1, y1, axis):
+            length = math.hypot(x1 - x0, y1 - y0)
+            count = max(2, round(length / step))
+            points = []
+            for i in range(count):
+                t = i / count
+                x = x0 + (x1 - x0) * t
+                y = y0 + (y1 - y0) * t
+                offset = rng.uniform(-jaggedness, jaggedness)
+                if rng.random() < notch_chance:
+                    offset -= notch_depth
+                if axis == "x":
+                    x += offset
+                else:
+                    y += offset
+                points.append(QPointF(x, y))
+            return points
+
+        perimeter = (
+            edge_points(left, top, right, top, "y")
+            + edge_points(right, top, right, bottom, "x")
+            + edge_points(right, bottom, left, bottom, "y")
+            + edge_points(left, bottom, left, top, "x")
+        )
+
+        path = QPainterPath()
+        path.moveTo(perimeter[0])
+        for point in perimeter[1:]:
+            path.lineTo(point)
+        path.closeSubpath()
+
+        return path
 
     def _build_placeholder_page(self, section_name):
 
@@ -2268,6 +2551,7 @@ class FaustusPage(QWidget):
         combo_box.setEditable(True)
         combo_box.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         combo_box.setMaxVisibleItems(15)
+        combo_box.lineEdit().setPlaceholderText("Type to search currency")
 
         for asset in self.asset_service.active_assets():
             if asset.name == "Chaos Orb":
@@ -2295,6 +2579,10 @@ class FaustusPage(QWidget):
 
             if index >= 0:
                 combo_box.setCurrentIndex(index)
+
+        completer.activated.connect(sync_selection)
+
+        combo_box.setCurrentIndex(-1)
 
         completer.activated.connect(sync_selection)
 
@@ -2442,7 +2730,7 @@ class FaustusPage(QWidget):
         self.on_trade_changed()
 
     def _reset_buy_form(self):
-        self.item_input.setCurrentIndex(0)
+        self.item_input.setCurrentIndex(-1)
         self.chaos_button.setChecked(True)
         self.buy_calc_linker.reset(quantity=1, price=1)
 
@@ -3008,6 +3296,13 @@ class TradesPage(QWidget):
         self.rows_layout.setSpacing(8)
 
         scroll_area.setWidget(self.rows_container)
+        # QScrollArea.setWidget() switches the content widget's
+        # autoFillBackground on automatically, which paints it with
+        # the opaque palette base color — invisible against the old
+        # dark overlay, but a stray light-gray box against the
+        # parchment. The "#tradesScroll { background: transparent }"
+        # rule doesn't reach this (it's a plain, unnamed QWidget).
+        self.rows_container.setAutoFillBackground(False)
 
         layout.addWidget(scroll_area)
 
@@ -3061,13 +3356,23 @@ class TradesPage(QWidget):
 
 
 # =============================================================
-# ANALYTICS PAGE — deep statistics for the current Trading Day
+# ANALYTICS PAGE — deep statistics, scoped to Today / Last 7
+# Trading Days / the whole league, or one specific historical day
 # =============================================================
-# Time-period selection and Trading Day history are structurally
-# present but only ever show "Today" / empty for now: without real
-# persistence (later build step), there is no previous Trading Day to
-# select or look back on yet. No fake data is shown in the meantime.
+# Trading Day history is real: closed days are frozen as snapshots
+# (TradingDay.snapshot_*) on New Day. The scope row below drives every
+# section on the page through TradeService.analytics_summary(), which
+# now aggregates over any set of Trading Day ids rather than just one.
 # =============================================================
+
+# Bars stay this wide in px no matter how many items there are
+# (Hugo's request) — the chart widens and scrolls horizontally
+# instead of Qt auto-shrinking bars to fit. CHROME_WIDTH is reserved
+# separately for axis labels/legend so they don't get squeezed when
+# there are only one or two bars.
+ITEM_CHART_BAR_WIDTH = 60
+ITEM_CHART_CHROME_WIDTH = 160
+
 
 class AnalyticsPage(QWidget):
 
@@ -3075,6 +3380,8 @@ class AnalyticsPage(QWidget):
         super().__init__(parent)
 
         self.trade_service = trade_service
+        self._scope = "today"
+        self._selected_day = None
 
         outer_layout = QVBoxLayout(self)
 
@@ -3087,7 +3394,61 @@ class AnalyticsPage(QWidget):
         self.content_layout.setSpacing(20)
 
         scroll_area.setWidget(content)
+        # QScrollArea.setWidget() switches the content widget's
+        # autoFillBackground on automatically, which paints it with
+        # the opaque palette base color — invisible against the old
+        # dark overlay, but a stray light-gray box against the
+        # parchment. The "#tradesScroll { background: transparent }"
+        # rule doesn't reach this (it's a plain, unnamed QWidget).
+        content.setAutoFillBackground(False)
         outer_layout.addWidget(scroll_area)
+
+        # ---------------------------------------------------------
+        # TITLE — league name, since scope is always per-league,
+        # never combined across leagues.
+        # ---------------------------------------------------------
+
+        self.title_label = QLabel("ANALYTICS")
+        self.title_label.setObjectName("sectionTitle")
+        self.content_layout.addWidget(self.title_label)
+
+        # ---------------------------------------------------------
+        # SCOPE ROW — Today / Last 7 Days / All, plus a dropdown to
+        # jump to one specific historical day.
+        # ---------------------------------------------------------
+
+        scope_row = QHBoxLayout()
+        scope_row.setSpacing(10)
+
+        self.scope_group = QButtonGroup(self)
+        self.scope_group.setExclusive(True)
+
+        self.scope_today_button = QPushButton("TODAY")
+        self.scope_week_button = QPushButton("LAST 7 DAYS")
+        self.scope_all_button = QPushButton("ALL")
+
+        for button, scope in (
+            (self.scope_today_button, "today"),
+            (self.scope_week_button, "last7"),
+            (self.scope_all_button, "all"),
+        ):
+            button.setObjectName("fauxTab")
+            button.setCheckable(True)
+            button.clicked.connect(
+                lambda checked, s=scope: self._set_scope(s)
+            )
+            self.scope_group.addButton(button)
+            scope_row.addWidget(button)
+
+        self.scope_today_button.setChecked(True)
+        scope_row.addStretch()
+
+        self.day_picker = QComboBox()
+        self.day_picker.addItem("Jump to day...", userData=None)
+        self.day_picker.currentIndexChanged.connect(self._on_day_picked)
+        scope_row.addWidget(self.day_picker)
+
+        self.content_layout.addLayout(scope_row)
 
         # ---------------------------------------------------------
         # SUMMARY ROW
@@ -3111,92 +3472,179 @@ class AnalyticsPage(QWidget):
         self.content_layout.addLayout(summary_layout)
 
         # ---------------------------------------------------------
-        # VIEWING BANNER (Today vs a selected historical day)
+        # ITEM PERFORMANCE — bar chart, bar height = profit, bar hue
+        # = profit (green = high/positive, red = low/negative).
+        # Replaces the old text table (Hugo's request).
         # ---------------------------------------------------------
 
-        viewing_row = QHBoxLayout()
-
-        self.viewing_label = QLabel("Viewing: TODAY")
-        self.viewing_label.setObjectName("sectionTitle")
-        viewing_row.addWidget(self.viewing_label)
-        viewing_row.addStretch()
-
-        self.back_to_today_button = QPushButton("BACK TO TODAY")
-        self.back_to_today_button.setObjectName("secondaryButton")
-        self.back_to_today_button.clicked.connect(self.show_today)
-        self.back_to_today_button.setVisible(False)
-        viewing_row.addWidget(self.back_to_today_button)
-
-        self.content_layout.addLayout(viewing_row)
-
-        self.history_detail_box = QFrame()
-        self.history_detail_box.setObjectName("tradeCard")
-        self.history_detail_box.setVisible(False)
-
-        detail_layout = QVBoxLayout(self.history_detail_box)
-
-        self.history_detail_stats_label = QLabel("")
-        self.history_detail_stats_label.setObjectName("tradeInfo")
-        detail_layout.addWidget(self.history_detail_stats_label)
-
-        self.history_detail_counts_label = QLabel("")
-        self.history_detail_counts_label.setObjectName("tradeInfo")
-        detail_layout.addWidget(self.history_detail_counts_label)
-
-        self.content_layout.addWidget(self.history_detail_box)
-
-        # ---------------------------------------------------------
-        # NEW TRADES VS CARRY-OVER SALES
-        # ---------------------------------------------------------
-
-        new_vs_carryover_title = QLabel("NEW TRADES VS CARRY-OVER SALES")
-        new_vs_carryover_title.setObjectName("sectionTitle")
-        self.content_layout.addWidget(new_vs_carryover_title)
-
-        self.new_vs_carryover_label = QLabel("")
-        self.new_vs_carryover_label.setObjectName("activity")
-        self.content_layout.addWidget(self.new_vs_carryover_label)
-
-        # ---------------------------------------------------------
-        # ITEM PERFORMANCE
-        # ---------------------------------------------------------
-
-        item_performance_title = QLabel("ITEM PERFORMANCE (TODAY)")
+        item_performance_title = QLabel("ITEM PERFORMANCE")
         item_performance_title.setObjectName("sectionTitle")
         self.content_layout.addWidget(item_performance_title)
 
-        self.item_performance_grid = QGridLayout()
-        self.item_performance_grid.setSpacing(10)
-        self.content_layout.addLayout(self.item_performance_grid)
+        self.item_chart_view = QChartView()
+        self.item_chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.item_chart_view.setFixedHeight(260)
+        self.item_chart_view.setStyleSheet("background: transparent;")
+
+        # Horizontal-only scroll, NOT resizable: bars stay an exact
+        # fixed px width regardless of item count (Hugo's request) —
+        # resizable=True would stretch the chart (and its bars) to
+        # fill the viewport whenever there are few items.
+        item_chart_scroll = QScrollArea()
+        item_chart_scroll.setWidgetResizable(False)
+        item_chart_scroll.setFixedHeight(260)
+        item_chart_scroll.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        item_chart_scroll.setStyleSheet(
+            "background: transparent; border: none;"
+        )
+        item_chart_scroll.setWidget(self.item_chart_view)
+        self.content_layout.addWidget(item_chart_scroll)
 
         # ---------------------------------------------------------
-        # GOLD / AVERAGES
+        # ROI vs PRICE — scatter chart, one dot per item: does buying
+        # more expensive items correlate with higher ROI?
         # ---------------------------------------------------------
 
-        gold_averages_title = QLabel("GOLD & AVERAGES")
-        gold_averages_title.setObjectName("sectionTitle")
-        self.content_layout.addWidget(gold_averages_title)
+        roi_price_title = QLabel("ROI vs PRICE PER ITEM")
+        roi_price_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(roi_price_title)
 
-        self.gold_averages_label = QLabel("")
-        self.gold_averages_label.setObjectName("activity")
-        self.content_layout.addWidget(self.gold_averages_label)
+        self.roi_price_chart_view = QChartView()
+        self.roi_price_chart_view.setRenderHint(
+            QPainter.RenderHint.Antialiasing
+        )
+        self.roi_price_chart_view.setMinimumHeight(260)
+        self.roi_price_chart_view.setStyleSheet("background: transparent;")
+        self.content_layout.addWidget(self.roi_price_chart_view)
 
         # ---------------------------------------------------------
-        # TRADING DAY HISTORY
+        # TRADE STATS — Completed Trades / Avg ROI per Trade / Win
+        # Rate. Replaces the old "Gold & Averages" section — no gold
+        # figures here at all (Hugo's request).
         # ---------------------------------------------------------
 
-        history_title = QLabel("TRADING DAY HISTORY")
-        history_title.setObjectName("sectionTitle")
-        self.content_layout.addWidget(history_title)
+        stats_layout = QHBoxLayout()
+        stats_layout.setSpacing(12)
 
-        self.history_grid = QGridLayout()
-        self.history_grid.setSpacing(10)
-        self.content_layout.addLayout(self.history_grid)
+        self.completed_box, self.completed_value = (
+            build_summary_box("COMPLETED TRADES")
+        )
+        self.avg_roi_box, self.avg_roi_value = (
+            build_summary_box("AVG ROI/TRADE")
+        )
+        self.win_rate_box, self.win_rate_value = (
+            build_summary_box("WIN RATE")
+        )
+
+        for box in (
+            self.completed_box, self.avg_roi_box, self.win_rate_box
+        ):
+            stats_layout.addWidget(box)
+
+        self.content_layout.addLayout(stats_layout)
+
+        # ---------------------------------------------------------
+        # PROFIT OVER TIME — line chart, one point per Trading Day.
+        # ---------------------------------------------------------
+
+        profit_time_title = QLabel("PROFIT OVER TIME")
+        profit_time_title.setObjectName("sectionTitle")
+        self.content_layout.addWidget(profit_time_title)
+
+        self.profit_time_chart_view = QChartView()
+        self.profit_time_chart_view.setRenderHint(
+            QPainter.RenderHint.Antialiasing
+        )
+        self.profit_time_chart_view.setMinimumHeight(220)
+        self.profit_time_chart_view.setStyleSheet(
+            "background: transparent;"
+        )
+        self.content_layout.addWidget(self.profit_time_chart_view)
 
         self.content_layout.addStretch()
 
+    # -----------------------------------------------------------
+    # SCOPE HANDLING
+    # -----------------------------------------------------------
+
+    def _set_scope(self, scope):
+        self._scope = scope
+        self._selected_day = None
+        self.day_picker.blockSignals(True)
+        self.day_picker.setCurrentIndex(0)
+        self.day_picker.blockSignals(False)
+        self.refresh()
+
+    def reset_to_today(self):
+        self.scope_today_button.setChecked(True)
+        self._set_scope("today")
+
+    def _on_day_picked(self, index):
+        day = self.day_picker.itemData(index)
+
+        if day is None:
+            return
+
+        self._selected_day = day
+        self.scope_group.setExclusive(False)
+        for button in (
+            self.scope_today_button,
+            self.scope_week_button,
+            self.scope_all_button,
+        ):
+            button.setChecked(False)
+        self.scope_group.setExclusive(True)
+        self.refresh()
+
+    def _populate_day_picker(self):
+        self.day_picker.blockSignals(True)
+
+        selected_id = (
+            self._selected_day.id if self._selected_day else None
+        )
+        self.day_picker.clear()
+        self.day_picker.addItem("Jump to day...", userData=None)
+
+        for day in reversed(self.trade_service.closed_trading_days()):
+            date_label = day.started_at.split(" ")[0]
+            self.day_picker.addItem(date_label, userData=day)
+            if day.id == selected_id:
+                self.day_picker.setCurrentIndex(
+                    self.day_picker.count() - 1
+                )
+
+        self.day_picker.blockSignals(False)
+
+    def _current_trading_day_ids(self):
+        if self._selected_day is not None:
+            return [self._selected_day.id]
+
+        if self._scope == "today":
+            return [self.trade_service.trading_day.id]
+
+        if self._scope == "last7":
+            return self.trade_service.last_n_trading_day_ids(7)
+
+        return [
+            day.id for day in self.trade_service.all_trading_days()
+        ]
+
+    # -----------------------------------------------------------
+    # REFRESH
+    # -----------------------------------------------------------
+
     def refresh(self):
-        summary = self.trade_service.analytics_summary()
+        self._populate_day_picker()
+
+        summary = self.trade_service.analytics_summary(
+            self._current_trading_day_ids()
+        )
+
+        self.title_label.setText(
+            f"ANALYTICS ({self.trade_service.league.name})"
+        )
 
         self.profit_value.setText(f"{summary['today_profit']:+,}c")
         self.roi_value.setText(f"{summary['roi'] * 100:+.1f}%")
@@ -3205,126 +3653,171 @@ class AnalyticsPage(QWidget):
         )
         self.tx_value.setText(str(summary["transaction_count_today"]))
 
-        self.new_vs_carryover_label.setText(
-            f"New Trade Sales:   {summary['new_trade_sales_count']}"
-            f"    ({summary['new_trade_sales_profit']:+,}c)\n"
-            f"Carry-over Sales:  {summary['carryover_sales_count']}"
-            f"    ({summary['carryover_sales_profit']:+,}c)"
+        self.completed_value.setText(
+            str(summary["completed_trades_today"])
+        )
+        self.avg_roi_value.setText(
+            f"{summary['average_roi_per_trade'] * 100:+.1f}%"
+        )
+        self.win_rate_value.setText(
+            f"{summary['win_rate'] * 100:.0f}%"
         )
 
-        clear_layout(self.item_performance_grid)
+        self._update_item_chart(summary["item_performance"])
+        self._update_roi_price_chart(summary["item_performance"])
+        self._update_profit_time_chart()
 
-        if not summary["item_performance"]:
-            self.item_performance_grid.addWidget(
-                build_empty_state("No sales yet today."),
-                0, 0, 1, 4
+    def _update_item_chart(self, item_performance):
+        chart = QChart()
+        chart.setBackgroundVisible(False)
+        chart.legend().setVisible(True)
+        chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
+        chart.legend().setLabelColor(QColor("#5c4630"))
+
+        entries = item_performance
+
+        if not entries:
+            self.item_chart_view.setFixedWidth(ITEM_CHART_CHROME_WIDTH)
+            self.item_chart_view.setChart(chart)
+            return
+
+        self.item_chart_view.setFixedWidth(
+            ITEM_CHART_CHROME_WIDTH + len(entries) * ITEM_CHART_BAR_WIDTH
+        )
+
+        profits = [entry["profit"] for entry in entries]
+        max_abs_profit = max(abs(p) for p in profits) or 1
+
+        series = QBarSeries()
+        for entry in entries:
+            bar_set = QBarSet(entry["item_name"])
+            bar_set.append(entry["profit"])
+            bar_set.setColor(
+                self._profit_color(entry["profit"], max_abs_profit)
             )
+            series.append(bar_set)
+
+        chart.addSeries(series)
+
+        axis_x = QBarCategoryAxis()
+        axis_x.append([""])
+        axis_x.setLabelsColor(QColor("#5c4630"))
+        chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        series.attachAxis(axis_x)
+
+        axis_y = QValueAxis()
+        axis_y.setLabelsColor(QColor("#5c4630"))
+        axis_y.setGridLineColor(QColor(59, 42, 24, 35))
+        chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+        series.attachAxis(axis_y)
+
+        self.item_chart_view.setChart(chart)
+
+    @staticmethod
+    def _profit_color(profit, max_abs_profit):
+        ratio = min(1.0, abs(profit) / max_abs_profit)
+        if profit >= 0:
+            return QColor.fromHsv(120, int(90 + 165 * ratio), 220)
+        return QColor.fromHsv(0, int(90 + 165 * ratio), 220)
+
+    def _update_roi_price_chart(self, item_performance):
+        chart = QChart()
+        chart.setBackgroundVisible(False)
+        chart.legend().setVisible(False)
+
+        series = QScatterSeries()
+        series.setMarkerSize(12)
+        series.setColor(QColor("#d4af6a"))
+
+        prices = []
+        rois = []
+        for entry in item_performance:
+            if entry["avg_buy_price"]:
+                price = entry["avg_buy_price"]
+                roi_percent = entry["roi"] * 100
+                series.append(price, roi_percent)
+                prices.append(price)
+                rois.append(roi_percent)
+
+        chart.addSeries(series)
+
+        axis_x = QValueAxis()
+        axis_x.setTitleText("Avg buy price (c)")
+        axis_x.setLabelsColor(QColor("#5c4630"))
+        axis_x.setTitleBrush(QColor("#5c4630"))
+        axis_x.setGridLineColor(QColor(59, 42, 24, 35))
+        chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        series.attachAxis(axis_x)
+
+        axis_y = QValueAxis()
+        axis_y.setTitleText("ROI %")
+        axis_y.setLabelsColor(QColor("#5c4630"))
+        axis_y.setTitleBrush(QColor("#5c4630"))
+        axis_y.setGridLineColor(QColor(59, 42, 24, 35))
+        chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+        series.attachAxis(axis_y)
+
+        # A single point (or several sharing the exact same value)
+        # gives QValueAxis a zero-width min==max range, which Qt
+        # renders as nothing at all — pad it out to a real range.
+        self._pad_axis_range(axis_x, prices)
+        self._pad_axis_range(axis_y, rois)
+
+        self.roi_price_chart_view.setChart(chart)
+
+    @staticmethod
+    def _pad_axis_range(axis, values):
+        if not values:
+            axis.setRange(0, 1)
+            return
+
+        low, high = min(values), max(values)
+        if low == high:
+            padding = abs(low) * 0.1 or 1
+            axis.setRange(low - padding, high + padding)
         else:
-            headers = ["ITEM", "QTY SOLD", "REVENUE", "PROFIT"]
+            axis.setRange(low, high)
 
-            for column, text in enumerate(headers):
-                header_label = QLabel(text)
-                header_label.setObjectName("formLabel")
-                self.item_performance_grid.addWidget(
-                    header_label, 0, column
-                )
+    def _update_profit_time_chart(self):
+        chart = QChart()
+        chart.setBackgroundVisible(False)
+        chart.legend().setVisible(False)
 
-            for row, entry in enumerate(
-                summary["item_performance"], start=1
-            ):
-                item_label = QLabel(entry["item_name"])
-                item_label.setObjectName("tradeTitle")
+        points = self.trade_service.profit_over_time()
 
-                quantity_label = QLabel(str(entry["quantity_sold"]))
-                quantity_label.setObjectName("tradeInfo")
+        series = QLineSeries()
+        series.setColor(QColor("#d4af6a"))
+        series.setPointsVisible(True)
+        for index, (_label, profit) in enumerate(points):
+            series.append(index, profit)
 
-                revenue_label = QLabel(f"{entry['revenue']:,}c")
-                revenue_label.setObjectName("tradeInfo")
+        chart.addSeries(series)
 
-                profit_label = QLabel(f"{entry['profit']:+,}c")
-                profit_label.setObjectName("tradeInfo")
+        axis_x = QBarCategoryAxis()
+        axis_x.append([label for label, _profit in points])
+        axis_x.setLabelsColor(QColor("#5c4630"))
+        chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        series.attachAxis(axis_x)
 
-                self.item_performance_grid.addWidget(item_label, row, 0)
-                self.item_performance_grid.addWidget(
-                    quantity_label, row, 1
-                )
-                self.item_performance_grid.addWidget(
-                    revenue_label, row, 2
-                )
-                self.item_performance_grid.addWidget(
-                    profit_label, row, 3
-                )
+        axis_y = QValueAxis()
+        axis_y.setLabelsColor(QColor("#5c4630"))
+        axis_y.setGridLineColor(QColor(59, 42, 24, 35))
+        chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+        series.attachAxis(axis_y)
+        self._pad_axis_range(axis_y, [profit for _label, profit in points])
 
-        self.gold_averages_label.setText(
-            f"Gold spent today:      {summary['gold_spent_today']:,}\n"
-            f"Gold received today:   {summary['gold_received_today']:,}\n"
-            f"Completed trades today: "
-            f"{summary['completed_trades_today']}\n"
-            f"Average profit/trade:  "
-            f"{summary['average_profit_per_trade']:+,.0f}c\n"
-            f"Total realized profit (lifetime): "
-            f"{summary['total_realized_profit']:+,}c"
-        )
-
-        clear_layout(self.history_grid)
-
-        closed_days = self.trade_service.closed_trading_days()
-
-        if not closed_days:
-            self.history_grid.addWidget(
-                build_empty_state("No previous Trading Days yet."),
-                0, 0, 1, 4
-            )
-        else:
-            for index, day in enumerate(closed_days):
-                card = build_history_day_card(
-                    day, on_click=self.show_historical_day
-                )
-
-                row = index // 4
-                column = index % 4
-
-                self.history_grid.addWidget(card, row, column)
-
-    def show_today(self):
-        self.viewing_label.setText("Viewing: TODAY")
-        self.back_to_today_button.setVisible(False)
-        self.history_detail_box.setVisible(False)
-
-    def show_historical_day(self, trading_day):
-        date_label = trading_day.started_at.split(" ")[0]
-
-        self.viewing_label.setText(f"Viewing: {date_label} (historical)")
-        self.back_to_today_button.setVisible(True)
-        self.history_detail_box.setVisible(True)
-
-        roi_percent = (trading_day.snapshot_roi or 0) * 100
-
-        self.history_detail_stats_label.setText(
-            f"PROFIT: {trading_day.snapshot_realized_profit:+,}c   "
-            f"% RETURN: {roi_percent:+.1f}%   "
-            f"REVENUE: {trading_day.snapshot_revenue:,}c\n"
-            f"INVENTORY VALUE: "
-            f"{trading_day.snapshot_inventory_value:,}c   "
-            f"GOLD SPENT: {trading_day.snapshot_gold_spent:,}   "
-            f"AVG PROFIT/TRADE: "
-            f"{trading_day.snapshot_average_profit_per_trade:+,.0f}c"
-        )
-        self.history_detail_counts_label.setText(
-            f"New Trades: {trading_day.snapshot_new_trades}   "
-            f"Carry-over Sales: {trading_day.snapshot_carryover_sales}   "
-            f"Completed Trades: {trading_day.snapshot_completed_trades}"
-        )
+        self.profit_time_chart_view.setChart(chart)
 
 
 # =============================================================
 # SETTINGS PAGE
 # =============================================================
-# General and Rates are real and functional. Assets/Cache Management
-# and Appearance are honest placeholders: there is no asset/cache
-# system yet (a later build step), and styling is deferred by Hugo's
-# own call until the app is functionally complete — showing fake
-# controls for either would be dishonest UI.
+# General, Rates, and Assets/Cache Management are all real and
+# functional (cache refresh/rebuild wired to AssetService). Appearance
+# is still an honest placeholder: the styling pass so far has only
+# covered the Hideout page (nebula background, engraved title, card
+# treatment) — Faustus/Stash/Trades/Analytics/Settings are unstyled,
+# so there's nothing real for an Appearance section to control yet.
 # =============================================================
 
 class SettingsPage(QWidget):
@@ -3360,6 +3853,13 @@ class SettingsPage(QWidget):
         content_layout.addStretch()
 
         scroll_area.setWidget(content)
+        # QScrollArea.setWidget() switches the content widget's
+        # autoFillBackground on automatically, which paints it with
+        # the opaque palette base color — invisible against the old
+        # dark overlay, but a stray light-gray box against the
+        # parchment. The "#tradesScroll { background: transparent }"
+        # rule doesn't reach this (it's a plain, unnamed QWidget).
+        content.setAutoFillBackground(False)
         outer_layout.addWidget(scroll_area)
 
     # -----------------------------------------------------
@@ -3383,7 +3883,9 @@ class SettingsPage(QWidget):
         self.volume_input.valueChanged.connect(
             self.trade_service.set_sound_master_volume
         )
-        form.addRow("Master volume", self.volume_input)
+        volume_label = QLabel("Master volume")
+        volume_label.setObjectName("formLabel")
+        form.addRow(volume_label, self.volume_input)
 
         self.tink_checkbox = QCheckBox("Enable TINK (profit sound)")
         self.tink_checkbox.setChecked(
@@ -3411,7 +3913,9 @@ class SettingsPage(QWidget):
         self.tier_small_input.valueChanged.connect(
             self._update_sound_tiers
         )
-        form.addRow("Small TINK up to (c)", self.tier_small_input)
+        tier_small_label = QLabel("Small TINK up to (c)")
+        tier_small_label.setObjectName("formLabel")
+        form.addRow(tier_small_label, self.tier_small_input)
 
         self.tier_medium_input = QSpinBox()
         self.tier_medium_input.setRange(1, 1_000_000)
@@ -3421,7 +3925,9 @@ class SettingsPage(QWidget):
         self.tier_medium_input.valueChanged.connect(
             self._update_sound_tiers
         )
-        form.addRow("Medium TINK up to (c)", self.tier_medium_input)
+        tier_medium_label = QLabel("Medium TINK up to (c)")
+        tier_medium_label.setObjectName("formLabel")
+        form.addRow(tier_medium_label, self.tier_medium_input)
 
         layout.addLayout(form)
 
@@ -3560,9 +4066,14 @@ class SettingsPage(QWidget):
         update_divine_button.setObjectName("secondaryButton")
         update_divine_button.clicked.connect(self._update_divine_rate)
 
-        divine_row.addWidget(QLabel("1 Divine ="))
+        divine_prefix_label = QLabel("1 Divine =")
+        divine_prefix_label.setObjectName("formLabel")
+        divine_suffix_label = QLabel("Chaos")
+        divine_suffix_label.setObjectName("formLabel")
+
+        divine_row.addWidget(divine_prefix_label)
         divine_row.addWidget(self.divine_rate_input)
-        divine_row.addWidget(QLabel("Chaos"))
+        divine_row.addWidget(divine_suffix_label)
         divine_row.addWidget(update_divine_button)
 
         layout.addLayout(divine_row)
@@ -3752,8 +4263,8 @@ class SettingsPage(QWidget):
 
         layout.addWidget(
             build_empty_state(
-                "Styling is intentionally deferred until the app "
-                "is fully functional."
+                "Styling has started on the Hideout page; the rest "
+                "of the app (including this page) is next."
             )
         )
 
@@ -3803,14 +4314,14 @@ class SettingsPage(QWidget):
 
 
 # =============================================================
-# STARTUP — mandatory Divine Rate prompt
+# STARTUP — league, mandatory Divine Rate, New Day/Continue
 # =============================================================
-# Per the locked startup flow, the Divine rate is asked at launch and
-# is mandatory to answer (no skip). The NEW DAY / CONTINUE step is
-# intentionally omitted for now: with no persistence yet, a Trading
-# Day never actually carries over between launches, so there is
-# nothing real to "continue" to. That step belongs here once real
-# persistence exists.
+# Per the locked startup flow (directives 16.1/38, later merged into
+# one dialog rather than three sequential screens — see
+# "Implementation Updates" in V1_APP_DIRECTIVES.md), this single
+# dialog covers league selection, the mandatory Divine rate prompt
+# (no skip), and the NEW DAY / CONTINUE choice against the persisted
+# Trading Day.
 # =============================================================
 
 class StartupDialog(QDialog):
@@ -3899,13 +4410,13 @@ class StartupDialog(QDialog):
             QDialog {
                 background: qlineargradient(
                     x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #17152a, stop:1 #100e1c
+                    stop:0 #e8d9b5, stop:1 #d8c69a
                 );
-                border: 1px solid #5a4fc8;
+                border: 1px solid #8a6a3c;
             }
 
             QLabel {
-                color: #aaaac8;
+                color: #5c4630;
                 font-size: 14px;
             }
 
@@ -3913,26 +4424,26 @@ class StartupDialog(QDialog):
                 font-family: __DISPLAY_FONT__;
                 font-size: 19px;
                 font-weight: bold;
-                color: #c7bdff;
+                color: #3b2a18;
                 letter-spacing: 1px;
             }
 
-            QSpinBox {
-                color: #eeeeff;
-                background: #181828;
-                border: 1px solid #35304f;
+            QSpinBox, QComboBox {
+                color: #3b2a18;
+                background: #d8c69a;
+                border: 1px solid #8a6a3c;
                 border-radius: 5px;
                 padding: 6px;
                 font-size: 13px;
             }
 
             QPushButton#primaryButton {
-                color: #0b0b12;
+                color: #f2f2f5;
                 background: qlineargradient(
                     x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #b0a4ff, stop:1 #9a8bff
+                    stop:0 #3a5a8c, stop:1 #16243d
                 );
-                border: 1px solid #9a8bff;
+                border: 1px solid #5b8dd9;
                 border-radius: 5px;
                 font-size: 13px;
                 font-weight: bold;
@@ -3941,11 +4452,11 @@ class StartupDialog(QDialog):
             }
 
             QPushButton#primaryButton:hover {
-                background: #c4baff;
+                background: #4a6a9c;
             }
 
             QPushButton#dayToggle {
-                color: #a8a4c8;
+                color: #aaaac8;
                 background: #181828;
                 border: 1px solid #35304f;
                 border-radius: 5px;
@@ -3955,13 +4466,13 @@ class StartupDialog(QDialog):
             }
 
             QPushButton#dayToggle:hover {
-                border: 1px solid #6a5fd8;
+                border: 1px solid #3a5a8c;
             }
 
             QPushButton#dayToggle:checked {
-                color: #f0ecff;
-                background: #2a2650;
-                border: 1px solid #9a8bff;
+                color: #f2f2f5;
+                background: #1c2f52;
+                border: 1px solid #3a5a8c;
             }
         """
 
