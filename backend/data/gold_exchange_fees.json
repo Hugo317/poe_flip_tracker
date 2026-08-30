@@ -1,0 +1,5627 @@
+[
+  {
+    "name": "A Chilling Wind",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "A Dab of Ink",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "A Dusty Memory",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "A Familiar Call",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "A Fate Worse Than Death",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "A Modest Request",
+    "numerator": 475,
+    "denominator": 1
+  },
+  {
+    "name": "A Mother's Parting Gift",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "A Note in the Wind",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "A Sea of Blue",
+    "numerator": 90,
+    "denominator": 1
+  },
+  {
+    "name": "A Stone Perfected",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "Abandoned Wealth",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Aberrant Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Abrasive Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Abyss Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Abyss Scarab of Crystals",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Abyss Scarab of Descending",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Abyss Scarab of Multitudes",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Abyss Scarab of the Consort",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Abyssal Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Accelerating Catalyst",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Acclimatisation",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Aetheric Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Akil's Prophecy",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "Al-Hezmin's Crest",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Alchemy Shard",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Alivia's Grace",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of Flesh",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of Kulemak",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of Propagation",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of Resplendence",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of Toads",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of the Ethereal",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of the Gilded",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Allflame Ember of the Wildwood",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Alluring Bounty",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Alone in the Darkness",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Alteration Shard",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Altered Perception",
+    "numerator": 725,
+    "denominator": 1
+  },
+  {
+    "name": "Amber Oil",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Ambitious Obsession",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "Ambush Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Ambush Scarab of Containment",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Ambush Scarab of Discernment",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Ambush Scarab of Hidden Compartments",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Ambush Scarab of Potency",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "An Audience With The King",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Anarchy Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Anarchy Scarab of Gigantification",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Anarchy Scarab of Partnership",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Anarchy Scarab of the Exceptional",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Anarchy's Price",
+    "numerator": 1250,
+    "denominator": 1
+  },
+  {
+    "name": "Ancestral Tattoo of Bloodlines",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Ancient Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Annulment Shard",
+    "numerator": 6,
+    "denominator": 1
+  },
+  {
+    "name": "Apocalypse",
+    "numerator": 700,
+    "denominator": 1
+  },
+  {
+    "name": "Armourer's Scrap",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Armoursmith's Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Arrogance of the Vaal",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Assassin's Favour",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Assassin's Gift",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "Astragali",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Astral Protection",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Atziri's Arsenal",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Audacity",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "Auspicious Ambitions",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "Avian Pursuit",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Awakener's Orb",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Awakening Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Azure Oil",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Azure Rage",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Azyran's Reward",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "Baited Expectations",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Baran's Crest",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Beauty Through Death",
+    "numerator": 825,
+    "denominator": 1
+  },
+  {
+    "name": "Bestiary Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Bestiary Scarab of Duplicating",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Bestiary Scarab of the Herd",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Bestiary Scarab of the Shadowed Crow",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Betrayal Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Betrayal Scarab of Reinforcements",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Betrayal Scarab of Unbreaking",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Betrayal Scarab of the Allflame",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Beyond Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Beyond Scarab of Corruption",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Beyond Scarab of Haemophilia",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Beyond Scarab of Resurgence",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Beyond Scarab of the Invasion",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Bijoux",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Black Oil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Blacksmith's Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Blacksmith's Whetstone",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Blazing Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Blessed Orb",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Blight Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Blight Scarab of Blooming",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Blight Scarab of Bounty",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Blight Scarab of Invigoration",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Blight Scarab of the Blightheart",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Blighted Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Blind Venture",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Bloodstained Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Boon of Justice",
+    "numerator": 85,
+    "denominator": 1
+  },
+  {
+    "name": "Boon of the First Ones",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Bound Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Bound by Flame",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "Boundless Realms",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Bowyer's Dream",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of Instability",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of Resonant Cascade",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of the Dreamer",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of the Hive",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of the Incensed Swarm",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Breach Scarab of the Marshal",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Brinehook's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Broken Promises",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "Broken Truce",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Brother's Gift",
+    "numerator": 600,
+    "denominator": 1
+  },
+  {
+    "name": "Brother's Stash",
+    "numerator": 600,
+    "denominator": 1
+  },
+  {
+    "name": "Brotherhood in Exile",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Brush, Paint and Palette",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Burial Medallion",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Buried Treasure",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Burning Blood",
+    "numerator": 1050,
+    "denominator": 1
+  },
+  {
+    "name": "Call to the First Ones",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Cameria's Cut",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cartographer's Delight",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cartographer's Delirium Orb",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Cartography Scarab of Corruption",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cartography Scarab of Escalation",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Cartography Scarab of Risk",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Cartography Scarab of Singularity",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cartography Scarab of the Multitude",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Challenging Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Chaos Orb",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Chaos Shard",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Chaotic Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Chaotic Disposition",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Chasing Risk",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Checkmate",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "Choking Guilt",
+    "numerator": 1450,
+    "denominator": 1
+  },
+  {
+    "name": "Chromatic Orb",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Clear Oil",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Coin of Desecration",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Coin of Knowledge",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Coin of Power",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Coin of Restoration",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Coin of Skill",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Corroded Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Cosmic Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Costly Curio",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Council of Cats",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Coveted Possession",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Crescent Splinter",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Crimson Oil",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Crusader's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Crystallised Rancour",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cursed Words",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Cyaxan's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Damnation",
+    "numerator": 1350,
+    "denominator": 1
+  },
+  {
+    "name": "Dark Dreams",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Dark Temptation",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Darker Half",
+    "numerator": 750,
+    "denominator": 1
+  },
+  {
+    "name": "Dead Man's Sulphur",
+    "numerator": 1,
+    "denominator": 1000
+  },
+  {
+    "name": "Deadly Joy",
+    "numerator": 725,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Anger",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Anguish",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Contempt",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Doubt",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Dread",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Envy",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Fear",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Greed",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Hatred",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Loathing",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Misery",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Rage",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Scorn",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Sorrow",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Spite",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Suffering",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Torment",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Woe",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Wrath",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Deafening Essence of Zeal",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Death",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Deathly Designs",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Decaying Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Deceptive Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Dedication to the Goddess",
+    "numerator": 180,
+    "denominator": 1
+  },
+  {
+    "name": "Deft Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Scarab of Delusions",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Scarab of Mania",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Scarab of Neuroses",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Delirium Scarab of Paranoia",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Dementophobia",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Demigod's Wager",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Dense Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Desecrated Virtue",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "Desperate Crusade",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Destined to Crumble",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Devouring Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Dextral Catalyst",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Dialla's Subjugation",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Disdain",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "Divination Scarab of Pilfering",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Divination Scarab of Plenty",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Divination Scarab of The Cloister",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Divine Beauty",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Divine Justice",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "Divine Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Divine Shard",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Divine Vessel",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Diviner's Delirium Orb",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Doedre's Madness",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Domination Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Domination Scarab of Apparitions",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Domination Scarab of Evolution",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Domination Scarab of Terrors",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Doryani's Epiphany",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "Draped in Dreams",
+    "numerator": 625,
+    "denominator": 1
+  },
+  {
+    "name": "Drox's Crest",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Duality",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "Dying Anguish",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Dying Light",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "Earth Drinker",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Echo of Loneliness",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Echo of Reverence",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Echo of Trauma",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Echoes of Love",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Elder's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Eldritch Chaos Orb",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "Eldritch Exalted Orb",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "Eldritch Orb of Annulment",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "Eldritch Perfection",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "Emperor of Purity",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Emperor's Luck",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Endless Night",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Energy Sword",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Enkindling Orb",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Essence Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Essence Scarab of Adaptation",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Essence Scarab of Ascent",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Essence Scarab of Calcification",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Essence Scarab of Stability",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Essence of Delirium",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Essence of Desolation",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Essence of Horror",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Essence of Hysteria",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Essence of Insanity",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Etched in Blood",
+    "numerator": 700,
+    "denominator": 1
+  },
+  {
+    "name": "Eternal Bonds",
+    "numerator": 725,
+    "denominator": 1
+  },
+  {
+    "name": "Eternal Orb",
+    "numerator": 6250,
+    "denominator": 1
+  },
+  {
+    "name": "Ever-Changing",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Exalted Orb",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Exalted Shard",
+    "numerator": 2,
+    "denominator": 1
+  },
+  {
+    "name": "Exceptional Eldritch Ember",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Exceptional Eldritch Ichor",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Exotic Coinage",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Expedition Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Expedition Scarab of Archaeology",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Expedition Scarab of Infusion",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Expedition Scarab of Runefinding",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Expedition Scarab of Verisium Powder",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Faceted Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Fateful Meeting",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "Father's Love",
+    "numerator": 1350,
+    "denominator": 1
+  },
+  {
+    "name": "Fertile Catalyst",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Fine Delirium Orb",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Fire Of Unknown Origin",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "Flesh of Xesht",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Power",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Duelist",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Marauder",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Ranger",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Scion",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Shadow",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Templar",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Forbidden Tattoo of the Witch",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Fossilised Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Foulborn Exalted Orb",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Foulborn Orb of Augmentation",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Foulborn Regal Orb",
+    "numerator": 750,
+    "denominator": 1
+  },
+  {
+    "name": "Fractured Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Fracturing Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Fracturing Shard",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Constriction",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Emptiness",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Enslavement",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Eradication",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Knowledge",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Purification",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Shape",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of Terror",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of the Chimera",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of the Hydra",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of the Minotaur",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragment of the Phoenix",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Fragmented Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Friendship",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "Frigid Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "From Bone to Ashes",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "Fruiting Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Fundamental Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Fungal Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Further Invention",
+    "numerator": 850,
+    "denominator": 1
+  },
+  {
+    "name": "Gemcutter's Mercy",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "Gemcutter's Prism",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Gemcutter's Promise",
+    "numerator": 85,
+    "denominator": 1
+  },
+  {
+    "name": "Gift of Asenath",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "Gift of the Gemling Queen",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Gift to the Goddess",
+    "numerator": 180,
+    "denominator": 1
+  },
+  {
+    "name": "Gilded Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Glassblower's Bauble",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Glimmer of Hope",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Glyphic Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Golden Oil",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Grand Eldritch Ember",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Grand Eldritch Ichor",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Grasping Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Grave Knowledge",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Greater Eldritch Ember",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Greater Eldritch Ichor",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Guardian's Challenge",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Harmony of Souls",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Harvest Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Harvest Scarab of Cornucopia",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Harvest Scarab of Doubling",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Haunting Shadows",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Her Mask",
+    "numerator": 70,
+    "denominator": 1
+  },
+  {
+    "name": "Heterochromia",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Hinekora's Lock",
+    "numerator": 6250,
+    "denominator": 1
+  },
+  {
+    "name": "History",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "Hivebrain Gland",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Hollow Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Home",
+    "numerator": 475,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Barbarian",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Berserker",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Dove",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Flock",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Flood",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Hatungo",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Hunter",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Makanga",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Mountain",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Oak",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Pa",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Pillager",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Sky",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Storm",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Tuatara",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Turtle",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Warlord",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Honoured Tattoo of the Wise",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Hope",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Awakening",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Bloodlines",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Glittering",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Nemeses",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Pandemonium",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Preservation",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Horned Scarab of Tradition",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "House of Mirrors",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "Hubris",
+    "numerator": 120,
+    "denominator": 1
+  },
+  {
+    "name": "Humility",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Hunter's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Hunter's Resolve",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Hunter's Reward",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "I See Brothers",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "Imbued Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Immortal Resolve",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Imperfect Memories",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "Imperial Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Imperial Enshrouding Crystal",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Imperial Legacy",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Incursion Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Incursion Scarab of Champions",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Incursion Scarab of Invasion",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Incursion Scarab of Timelines",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Indigo Oil",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Influencing Scarab of Hordes",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Influencing Scarab of Interference",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Influencing Scarab of the Elder",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Influencing Scarab of the Shaper",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Instilling Orb",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Intrinsic Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Jack in the Box",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Jagged Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Jeweller's Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Jeweller's Orb",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Journey Tattoo of Makanui",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Journey Tattoo of the Body",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Journey Tattoo of the Mind",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Journey Tattoo of the Soul",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Judging Voices",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "Justified Ambition",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Kalguuran Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Kalguuran Scarab",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Kalguuran Scarab of Enriching",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Kalguuran Scarab of Guarded Riches",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Kalguuran Scarab of Refinement",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Karui Enshrouding Crystal",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Katakohi's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Keeper's Corruption",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "Kishara's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Lachrymal Necrosis",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Lantador's Lost Love",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Last Hope",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "Last Stand",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "Left to Fate",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Legion Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Legion Scarab of Eternal Conflict",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Legion Scarab of Officers",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Legion Scarab of The Sekhema",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Legion Scarab of Treasures",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Lesser Eldritch Ember",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Lesser Eldritch Ichor",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Lethean Temptation",
+    "numerator": 475,
+    "denominator": 1
+  },
+  {
+    "name": "Light and Truth",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Lightless Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Lingering Remnants",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Lonely Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Lonely Warrior",
+    "numerator": 1250,
+    "denominator": 1
+  },
+  {
+    "name": "Lost Worlds",
+    "numerator": 80,
+    "denominator": 1
+  },
+  {
+    "name": "Love Through Ice",
+    "numerator": 1350,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Ahuana",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Akoya",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Ikiaho",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Kahuturoa",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Kaom",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Kiloava",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Maata",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Rakiata",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Tawhanuku",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Loyalty Tattoo of Utula",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Lucent Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Lucky Bastion",
+    "numerator": 850,
+    "denominator": 1
+  },
+  {
+    "name": "Lucky Connections",
+    "numerator": 95,
+    "denominator": 1
+  },
+  {
+    "name": "Lucky Deck",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Luminous Trove",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "Lysah's Respite",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Magnum Opus",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "Man With Bear",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Maraketh Enshrouding Crystal",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Matryoshka",
+    "numerator": 600,
+    "denominator": 1
+  },
+  {
+    "name": "Maven's Chisel of Avarice",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Maven's Chisel of Divination",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Maven's Chisel of Procurement",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Maven's Chisel of Proliferation",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Maven's Chisel of Scarabs",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Mawr Blaidd",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Memory of Loneliness",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Memory of Reverence",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Memory of Trauma",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Merciless Armament",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Merrick's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Message in a Bottle",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Metallic Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Might is Right",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Mirror Shard",
+    "numerator": 1250,
+    "denominator": 1
+  },
+  {
+    "name": "Mirror of Kalandra",
+    "numerator": 25000,
+    "denominator": 1
+  },
+  {
+    "name": "Misery in Darkness",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "Mitts",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Monochrome",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "More is Never Enough",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Mortal Grief",
+    "numerator": 40,
+    "denominator": 1
+  },
+  {
+    "name": "Mortal Hope",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Mortal Ignorance",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Mortal Rage",
+    "numerator": 190,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Anger",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Contempt",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Fear",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Greed",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Hatred",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Sorrow",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Torment",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Muttering Essence of Woe",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Nameless Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "No Traces",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Nook's Crown",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "Noxious Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Obscured Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Offering to the Goddess",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Adrenaline",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Amelioration",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Brilliance",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Connections",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Death's Door",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Death-dancing",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Fortune",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Refreshment",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Return",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of Trichromatism",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of the Jeweller",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Omen of the Soul Devourer",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "One Last Score",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Opalescent Oil",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Opulent Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Alchemy",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Alteration",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Annulment",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Augmentation",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Binding",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Chance",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Conflict",
+    "numerator": 1050,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Dominance",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Fusing",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Intention",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Regret",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Remembrance",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Scouring",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Transmutation",
+    "numerator": 3,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Unmaking",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Orb of Unravelling",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Outfoxed",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Parasitic Passengers",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Peaceful Moments",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Pearls Before Swine",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Perfection",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "Poisoned Faith",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "Portal Scroll",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Potent Alchemical Resonator",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Potent Chaotic Resonator",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "Powerful Alchemical Resonator",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Powerful Chaotic Resonator",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Prejudice",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Pride Before the Fall",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "Pride of the First Ones",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Primal Crystallised Lifeforce",
+    "numerator": 1,
+    "denominator": 8
+  },
+  {
+    "name": "Primal Delirium Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Prime Alchemical Resonator",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Prime Chaotic Resonator",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Primitive Alchemical Resonator",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Primitive Chaotic Resonator",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Prismatic Catalyst",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Prismatic Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Prismatic Oil",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Pristine Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Prometheus' Armoury",
+    "numerator": 800,
+    "denominator": 1
+  },
+  {
+    "name": "Prosperity",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Rain Tempter",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Rain of Chaos",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Rats",
+    "numerator": 40,
+    "denominator": 1
+  },
+  {
+    "name": "Reality Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Rebirth",
+    "numerator": 475,
+    "denominator": 1
+  },
+  {
+    "name": "Rebirth and Renewal",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Reckless Ambition",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Redeemer's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Reflecting Mist",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Reflection of the Heart",
+    "numerator": 670,
+    "denominator": 1
+  },
+  {
+    "name": "Reflective Oil",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Refracting Fog",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Regal Orb",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Regal Shard",
+    "numerator": 2,
+    "denominator": 1
+  },
+  {
+    "name": "Remembrance",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "Reverent Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Scarab of Abundance",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Scarab of Corpses",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Scarab of Selectiveness",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Scarab of Wisps",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Splinter",
+    "numerator": 2,
+    "denominator": 1
+  },
+  {
+    "name": "Ritual Vessel",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Rogue's Marker",
+    "numerator": 1,
+    "denominator": 1000
+  },
+  {
+    "name": "Rotmother's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Bellows",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Blasphemy",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Connection",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Consecration",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Fury",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Gemcraft",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Loyalty",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Quaffing",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Rallying",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Refraction",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Restitching",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Resurgence",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Rotblood",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Stability",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Suffering",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Time",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of Treachery",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Agile",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Angler",
+    "numerator": 5000,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Bound",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Combatant",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Fortress",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Imbued",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Jeweller",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Novamark",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the River",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Sinistral",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Soulwick",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Spellbound",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Warp",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runegraft of the Witchmark",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Runic Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Runic Luck",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "Sacred Blossom",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Sacred Crystallised Lifeforce",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Sacred Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Sacrifice at Dawn",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Sacrifice at Dusk",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "Sacrifice at Midnight",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Sacrifice at Noon",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Sambodhi's Vow",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Sambodhi's Wisdom",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "Sanctified Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Adversaries",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Divinity",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Hunted Traitors",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Monstrous Lineage",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Radiant Storms",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Stability",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of Wisps",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of the Dextral",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Scarab of the Sinistral",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Scholar of the Seas",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Scorched Fossil",
+    "numerator": 30,
+    "denominator": 1
+  },
+  {
+    "name": "Scrap Metal",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Anger",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Anguish",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Contempt",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Doubt",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Dread",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Envy",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Fear",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Greed",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Hatred",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Loathing",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Misery",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Rage",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Scorn",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Sorrow",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Spite",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Suffering",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Torment",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Woe",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Wrath",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Screaming Essence of Zeal",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Scroll of Wisdom",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Sepia Oil",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Serrated Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Seven Years Bad Luck",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "Shaper's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Shard of Fate",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Anger",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Anguish",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Contempt",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Doubt",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Dread",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Envy",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Fear",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Greed",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Hatred",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Loathing",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Misery",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Rage",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Scorn",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Sorrow",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Spite",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Suffering",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Torment",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Woe",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Wrath",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shrieking Essence of Zeal",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Shuddering Fossil",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Silence and Frost",
+    "numerator": 625,
+    "denominator": 1
+  },
+  {
+    "name": "Silver Coin",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Silver Oil",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Simulacrum",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Simulacrum Splinter",
+    "numerator": 1,
+    "denominator": 1
+  },
+  {
+    "name": "Singular Delirium Orb",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Sinistral Catalyst",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Skittering Delirium Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Society's Remorse",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Something Dark",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Squandered Prosperity",
+    "numerator": 675,
+    "denominator": 1
+  },
+  {
+    "name": "Stacked Deck",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "Struck by Lightning",
+    "numerator": 95,
+    "denominator": 1
+  },
+  {
+    "name": "Succor of the Sinless",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "Sulphite Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Sulphite Scarab of Fumes",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Sulphite Scarab of Greed",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Syndicate Medallion",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Synthesising Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Tailoring Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Armourer's Scrap",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Blacksmith's Whetstone",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Catalyst",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Chaos Orb",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Chromatic Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Divine Teardrop",
+    "numerator": 900,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Exalted Orb",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Jeweller's Orb",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Mythic Orb",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Oil",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Tainted Orb of Fusing",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "Tangled Fossil",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Moonwarden",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Scout",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Shaman",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Warmonger",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Arohongui Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Deathwarden",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Shaman",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Storyteller",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Warmonger",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Hinekora Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Blood Drinker",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Heart Eater",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Rebel",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Shaman",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Kitava Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Firewalker",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Shaman",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Warmonger",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ngamahu Woodcarver",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Archer",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Fleetfoot",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Scout",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Shaman",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Ramako Sniper",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Brute",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Goliath",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Guard",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Turtle",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Rongokurai Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Bladedancer",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Scout",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Shaman",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Tideshifter",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tasalio Warrior",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Herbalist",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Naturalist",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Scout",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Shaman",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tawhoa Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Brawler",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Shaman",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Warcaller",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Warmonger",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Tukohama Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Makanga",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Scout",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Shaman",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Shieldbearer",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Stormrider",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Tattoo of the Valako Warrior",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Teal Oil",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Telesia's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Temperance",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "Tempering Catalyst",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Tempering Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Templar Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Templar Enshrouding Crystal",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Terrible Secret of Space",
+    "numerator": 1250,
+    "denominator": 1
+  },
+  {
+    "name": "Thaumaturge's Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Academic",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "The Admirer",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Adventuring Spirit",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "The Aesthete",
+    "numerator": 120,
+    "denominator": 1
+  },
+  {
+    "name": "The Apothecary",
+    "numerator": 1100,
+    "denominator": 1
+  },
+  {
+    "name": "The Archmage's Right Hand",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Arena Champion",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "The Army of Blood",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "The Artist",
+    "numerator": 675,
+    "denominator": 1
+  },
+  {
+    "name": "The Aspirant",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Astromancer",
+    "numerator": 1450,
+    "denominator": 1
+  },
+  {
+    "name": "The Avenger",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Awakened",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Battle Born",
+    "numerator": 120,
+    "denominator": 1
+  },
+  {
+    "name": "The Bear Woman",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Beast",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Betrayal",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Bitter Blossom",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "The Black Barya",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Blazing Fire",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "The Blessing of Moosh",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Body",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Bones",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Brawny Battle Mage",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Breach",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "The Brittle Emperor",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "The Cache",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "The Cacophony",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Calling",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Card Sharp",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Carrion Crow",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "The Cataclysm",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "The Catch",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Celestial Justicar",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Celestial Stone",
+    "numerator": 700,
+    "denominator": 1
+  },
+  {
+    "name": "The Chains that Bind",
+    "numerator": 70,
+    "denominator": 1
+  },
+  {
+    "name": "The Changeling's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Chosen",
+    "numerator": 1250,
+    "denominator": 1
+  },
+  {
+    "name": "The Coming Storm",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Conduit",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Craving",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Cursed King",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Damned",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "The Dapper Prodigy",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Dark Mage",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Darkest Dream",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Deal",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Deceiver",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Deep Ones",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "The Demon",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "The Demoness",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "The Destination",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Doctor",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Doppelganger",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "The Dragon",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "The Dragon's Heart",
+    "numerator": 675,
+    "denominator": 1
+  },
+  {
+    "name": "The Dreamer",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "The Dreamland",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Drunken Aristocrat",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Dungeon Master",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "The Easy Stroll",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Eldritch Decay",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Emptiness",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "The Encroaching Darkness",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Endless Darkness",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Endurance",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Enforcer",
+    "numerator": 1100,
+    "denominator": 1
+  },
+  {
+    "name": "The Enlightened",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "The Enthusiasts",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "The Escape",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Eternal War",
+    "numerator": 950,
+    "denominator": 1
+  },
+  {
+    "name": "The Ethereal",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Everlasting",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "The Explorer",
+    "numerator": 85,
+    "denominator": 1
+  },
+  {
+    "name": "The Eye of Terror",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "The Eye of the Dragon",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "The Fathomless Depths",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Feast",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Fiend",
+    "numerator": 1350,
+    "denominator": 1
+  },
+  {
+    "name": "The Finishing Touch",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Fishmonger",
+    "numerator": 825,
+    "denominator": 1
+  },
+  {
+    "name": "The Fletcher",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Flora's Gift",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "The Fool",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Forbidden Fruit",
+    "numerator": 1150,
+    "denominator": 1
+  },
+  {
+    "name": "The Forgotten Treasure",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Formless Sea",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Forsaken",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Fortunate",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Forward Gaze",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Fox",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Fox in the Brambles",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Gambler",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Garish Power",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Gemcutter",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Genteel's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Gentleman",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Gladiator",
+    "numerator": 120,
+    "denominator": 1
+  },
+  {
+    "name": "The Golden Era",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Greatest Intentions",
+    "numerator": 1350,
+    "denominator": 1
+  },
+  {
+    "name": "The Gulf",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "The Hale Heart",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "The Harvester",
+    "numerator": 40,
+    "denominator": 1
+  },
+  {
+    "name": "The Hermit",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "The Heroic Shot",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Hive of Knowledge",
+    "numerator": 800,
+    "denominator": 1
+  },
+  {
+    "name": "The Hoarder",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Hook",
+    "numerator": 475,
+    "denominator": 1
+  },
+  {
+    "name": "The Hunger",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Immortal",
+    "numerator": 825,
+    "denominator": 1
+  },
+  {
+    "name": "The Incantation",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Innocent",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Inoculated",
+    "numerator": 105,
+    "denominator": 1
+  },
+  {
+    "name": "The Insane Cat",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "The Insatiable",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Inventor",
+    "numerator": 105,
+    "denominator": 1
+  },
+  {
+    "name": "The Jester",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Jeweller's Boon",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Journalist",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "The Journey",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The King's Blade",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "The King's Heart",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Lake",
+    "numerator": 1500,
+    "denominator": 1
+  },
+  {
+    "name": "The Last Laugh",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "The Last One Standing",
+    "numerator": 850,
+    "denominator": 1
+  },
+  {
+    "name": "The Last Supper",
+    "numerator": 1025,
+    "denominator": 1
+  },
+  {
+    "name": "The Leviathan",
+    "numerator": 775,
+    "denominator": 1
+  },
+  {
+    "name": "The Lich",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Life Thief",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "The Lion",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Long Con",
+    "numerator": 600,
+    "denominator": 1
+  },
+  {
+    "name": "The Long Watch",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "The Lord in Black",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Lord of Celebration",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Lover",
+    "numerator": 10,
+    "denominator": 1
+  },
+  {
+    "name": "The Lunaris Priestess",
+    "numerator": 90,
+    "denominator": 1
+  },
+  {
+    "name": "The Mad King",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "The Magma Crab",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Master Artisan",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Maven's Writ",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "The Mayor",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "The Mercenary",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Messenger",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "The Metalsmith's Gift",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "The Mind's Eyes",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Miracle",
+    "numerator": 750,
+    "denominator": 1
+  },
+  {
+    "name": "The Mountain",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Nurse",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "The Oath",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Offering",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Offspring",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Old Man",
+    "numerator": 1600,
+    "denominator": 1
+  },
+  {
+    "name": "The One That Got Away",
+    "numerator": 1450,
+    "denominator": 1
+  },
+  {
+    "name": "The One With All",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Opulent",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "The Pack Leader",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Pact",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "The Patient",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Penitent",
+    "numerator": 115,
+    "denominator": 1
+  },
+  {
+    "name": "The Poet",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Polymath",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Porcupine",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Price of Devotion",
+    "numerator": 1850,
+    "denominator": 1
+  },
+  {
+    "name": "The Price of Loyalty",
+    "numerator": 1600,
+    "denominator": 1
+  },
+  {
+    "name": "The Price of Prescience",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Price of Protection",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Primordial",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Prince of Darkness",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "The Professor",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "The Progeny of Lunaris",
+    "numerator": 725,
+    "denominator": 1
+  },
+  {
+    "name": "The Queen",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "The Rabbit's Foot",
+    "numerator": 575,
+    "denominator": 1
+  },
+  {
+    "name": "The Rabid Rhoa",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Realm",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Return of the Rat",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Risk",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Rite of Elements",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Road to Power",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "The Rusted Bard",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "The Ruthless Ceinture",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Sacrifice",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "The Saint's Treasure",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Samurai's Eye",
+    "numerator": 525,
+    "denominator": 1
+  },
+  {
+    "name": "The Scarred Meadow",
+    "numerator": 35,
+    "denominator": 1
+  },
+  {
+    "name": "The Scavenger",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Scholar",
+    "numerator": 15,
+    "denominator": 1
+  },
+  {
+    "name": "The Scout",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Seeker",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Sephirot",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Shepherd's Sandals",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "The Shieldbearer",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Shortcut",
+    "numerator": 425,
+    "denominator": 1
+  },
+  {
+    "name": "The Side Quest",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Sigil",
+    "numerator": 90,
+    "denominator": 1
+  },
+  {
+    "name": "The Silly Boy",
+    "numerator": 700,
+    "denominator": 1
+  },
+  {
+    "name": "The Siren",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Skeleton",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Slumbering Beast",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "The Soul",
+    "numerator": 900,
+    "denominator": 1
+  },
+  {
+    "name": "The Spark and the Flame",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Spoiled Prince",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "The Standoff",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "The Stormcaller",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "The Strategist",
+    "numerator": 700,
+    "denominator": 1
+  },
+  {
+    "name": "The Summoner",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "The Sun",
+    "numerator": 60,
+    "denominator": 1
+  },
+  {
+    "name": "The Surgeon",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Surveyor",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Survivalist",
+    "numerator": 90,
+    "denominator": 1
+  },
+  {
+    "name": "The Sword King's Salute",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "The Thaumaturgist",
+    "numerator": 450,
+    "denominator": 1
+  },
+  {
+    "name": "The Throne",
+    "numerator": 400,
+    "denominator": 1
+  },
+  {
+    "name": "The Tinkerer's Table",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "The Tireless Extractor",
+    "numerator": 70,
+    "denominator": 1
+  },
+  {
+    "name": "The Tower",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "The Traitor",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Transformation",
+    "numerator": 325,
+    "denominator": 1
+  },
+  {
+    "name": "The Trial",
+    "numerator": 115,
+    "denominator": 1
+  },
+  {
+    "name": "The Tumbleweed",
+    "numerator": 725,
+    "denominator": 1
+  },
+  {
+    "name": "The Twilight Moon",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Twins",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Tyrant",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Undaunted",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The Undisputed",
+    "numerator": 825,
+    "denominator": 1
+  },
+  {
+    "name": "The Unexpected Prize",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Union",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "The Valkyrie",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Vast",
+    "numerator": 1200,
+    "denominator": 1
+  },
+  {
+    "name": "The Visionary",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "The Void",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Warden",
+    "numerator": 70,
+    "denominator": 1
+  },
+  {
+    "name": "The Warlord",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "The Watcher",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Web",
+    "numerator": 95,
+    "denominator": 1
+  },
+  {
+    "name": "The Wedding Gift",
+    "numerator": 550,
+    "denominator": 1
+  },
+  {
+    "name": "The White Knight",
+    "numerator": 650,
+    "denominator": 1
+  },
+  {
+    "name": "The Whiteout",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Wilted Rose",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Wind",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Witch",
+    "numerator": 40,
+    "denominator": 1
+  },
+  {
+    "name": "The Wolf",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Wolf's Legacy",
+    "numerator": 150,
+    "denominator": 1
+  },
+  {
+    "name": "The Wolf's Shadow",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "The Wolven King's Bite",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "The Wolverine",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "The World Eater",
+    "numerator": 925,
+    "denominator": 1
+  },
+  {
+    "name": "The Wrath",
+    "numerator": 85,
+    "denominator": 1
+  },
+  {
+    "name": "The Wretched",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Thirst for Knowledge",
+    "numerator": 90,
+    "denominator": 1
+  },
+  {
+    "name": "Three Faces in the Dark",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Three Voices",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Thunderous Skies",
+    "numerator": 65,
+    "denominator": 1
+  },
+  {
+    "name": "Time-Lost Relic",
+    "numerator": 105,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Astrolabe",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Delirium Orb",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Eternal Emblem",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Eternal Empire Splinter",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Karui Emblem",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Karui Splinter",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Maraketh Emblem",
+    "numerator": 750,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Maraketh Splinter",
+    "numerator": 8,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Templar Emblem",
+    "numerator": 750,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Templar Splinter",
+    "numerator": 8,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Vaal Emblem",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Timeless Vaal Splinter",
+    "numerator": 5,
+    "denominator": 1
+  },
+  {
+    "name": "Titanic Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Titanic Scarab of Legend",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Titanic Scarab of Treasures",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Torment Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Torment Scarab of Peculiarity",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Torment Scarab of Possession",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Torment Scarab of Release",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Toxic Tidings",
+    "numerator": 375,
+    "denominator": 1
+  },
+  {
+    "name": "Tranquillity",
+    "numerator": 950,
+    "denominator": 1
+  },
+  {
+    "name": "Transmutation Shard",
+    "numerator": 1,
+    "denominator": 4
+  },
+  {
+    "name": "Trarthan Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Trarthan Scarab of Infamy",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Trarthan Scarab of Renown",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Trarthan Scarab of Surprising Alliances",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Traumatic Fragment",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Treasure Hunter",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Tribute to the Goddess",
+    "numerator": 180,
+    "denominator": 1
+  },
+  {
+    "name": "Triskaidekaphobia",
+    "numerator": 200,
+    "denominator": 1
+  },
+  {
+    "name": "Turbulent Catalyst",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Turn the Other Cheek",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Tzamoto's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Ukatoa's Ducat",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Ultimatum Scarab",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Ultimatum Scarab of Bribing",
+    "numerator": 100,
+    "denominator": 1
+  },
+  {
+    "name": "Ultimatum Scarab of Catalysing",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Ultimatum Scarab of Dueling",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Ultimatum Scarab of Inscription",
+    "numerator": 125,
+    "denominator": 1
+  },
+  {
+    "name": "Unchained",
+    "numerator": 275,
+    "denominator": 1
+  },
+  {
+    "name": "Underground Forest",
+    "numerator": 350,
+    "denominator": 1
+  },
+  {
+    "name": "Unrequited Love",
+    "numerator": 1450,
+    "denominator": 1
+  },
+  {
+    "name": "Unstable Catalyst",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Vaal Enshrouding Crystal",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Vaal Orb",
+    "numerator": 20,
+    "denominator": 1
+  },
+  {
+    "name": "Valdo's Puzzle Box",
+    "numerator": 300,
+    "denominator": 1
+  },
+  {
+    "name": "Vanity",
+    "numerator": 225,
+    "denominator": 1
+  },
+  {
+    "name": "Veiled Chaos Orb",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Veiled Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Verdant Oil",
+    "numerator": 50,
+    "denominator": 1
+  },
+  {
+    "name": "Veritania's Crest",
+    "numerator": 250,
+    "denominator": 1
+  },
+  {
+    "name": "Vile Power",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Vinia's Token",
+    "numerator": 60,
+    "denominator": 1
+  },
+  {
+    "name": "Violet Oil",
+    "numerator": 75,
+    "denominator": 1
+  },
+  {
+    "name": "Vivid Crystallised Lifeforce",
+    "numerator": 1,
+    "denominator": 8
+  },
+  {
+    "name": "Void of the Elements",
+    "numerator": 875,
+    "denominator": 1
+  },
+  {
+    "name": "Voidborn Reliquary Key",
+    "numerator": 975,
+    "denominator": 1
+  },
+  {
+    "name": "Volatile Power",
+    "numerator": 110,
+    "denominator": 1
+  },
+  {
+    "name": "Volatile Vaal Orb",
+    "numerator": 900,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Anger",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Anguish",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Contempt",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Doubt",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Fear",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Greed",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Hatred",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Loathing",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Rage",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Sorrow",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Spite",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Suffering",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Torment",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Woe",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Wrath",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Wailing Essence of Zeal",
+    "numerator": 55,
+    "denominator": 1
+  },
+  {
+    "name": "Warlord's Exalted Orb",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Wealth and Power",
+    "numerator": 675,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Anger",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Contempt",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Doubt",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Fear",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Greed",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Hatred",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Rage",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Sorrow",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Suffering",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Torment",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Woe",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "Weeping Essence of Wrath",
+    "numerator": 45,
+    "denominator": 1
+  },
+  {
+    "name": "When Currents Blaze",
+    "numerator": 875,
+    "denominator": 1
+  },
+  {
+    "name": "Whispering Delirium Orb",
+    "numerator": 175,
+    "denominator": 1
+  },
+  {
+    "name": "Whispering Essence of Contempt",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Whispering Essence of Greed",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Whispering Essence of Hatred",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Whispering Essence of Woe",
+    "numerator": 25,
+    "denominator": 1
+  },
+  {
+    "name": "Who Asked",
+    "numerator": 1000,
+    "denominator": 1
+  },
+  {
+    "name": "Wild Crystallised Lifeforce",
+    "numerator": 1,
+    "denominator": 8
+  },
+  {
+    "name": "Winter's Embrace",
+    "numerator": 600,
+    "denominator": 1
+  },
+  {
+    "name": "Zorath's Eye of Authority",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Zorath's Eye of Malevolence",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Zorath's Eye of the Endless",
+    "numerator": 500,
+    "denominator": 1
+  },
+  {
+    "name": "Zorath's Eye of the Inevitable",
+    "numerator": 500,
+    "denominator": 1
+  }
+]
