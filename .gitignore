@@ -11,3 +11,8 @@ build/
 dist/
 
 .pytest_cache/
+
+# personal trade data written by the old CLI (tracker.py / backend/storage.py): keep it local
+/data.json
+/data.json.bak
+/poe_flip_tracker_backup_*.json
