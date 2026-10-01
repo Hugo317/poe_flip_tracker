@@ -5,6 +5,8 @@ bought, sell it off in one go or in pieces as the market moves, and see
 your real profit instead of guessing. See `V1_APP_DIRECTIVES.md` for
 the full product spec.
 
+![DivineFlipper Hideout](docs/screenshots/01_hideout.jpg)
+
 ## Download
 
 Standalone builds, no Python install required:
@@ -12,10 +14,25 @@ Standalone builds, no Python install required:
 - **macOS**: [DivineFlipper-macOS.zip](https://github.com/Hugo317/poe_flip_tracker/releases/download/v1.0.0/DivineFlipper-macOS.zip)
 - **Windows**: [DivineFlipper-Windows.zip](https://github.com/Hugo317/poe_flip_tracker/releases/download/v1.0.0/DivineFlipper-Windows.zip)
 
-Unzip and run — macOS will warn the app is from an unidentified
-developer on first launch (it isn't code-signed with a paid Apple
-Developer cert); right-click the app and choose **Open** once to bypass
-that.
+Unzip and run.
+
+### Opening on macOS
+
+The app isn't code-signed with a paid Apple Developer certificate, so on
+first launch macOS says it can't verify the app and only offers **Move to
+Trash** or **Done**. Click **Done**, then either:
+
+- **System Settings**: open **Privacy & Security**, scroll to **Security**,
+  click **Open Anyway** next to *"DivineFlipper" was blocked*, and confirm
+  with your password. Open the app again and choose **Open Anyway**.
+- **Terminal**: remove the "downloaded from the internet" flag, then
+  double-click the app as usual:
+
+  ```bash
+  xattr -dr com.apple.quarantine /path/to/DivineFlipper.app
+  ```
+
+You only need to do this once.
 
 ## What it does
 
@@ -43,6 +60,18 @@ that.
   from Settings
 - **Local-first data** — everything lives in a local SQLite database
   that migrates itself on launch; no server, no account, no setup
+
+## Screenshots
+
+| Faustus: log a buy or sell | Stash |
+|---|---|
+| ![Faustus BUY/SELL panel](docs/screenshots/02_log_trade.jpg) | ![Stash](docs/screenshots/03_stash.jpg) |
+
+| Trades log | Analytics |
+|---|---|
+| ![Trades log](docs/screenshots/04_trade_history.jpg) | ![Analytics](docs/screenshots/05_analytics.jpg) |
+
+![Settings: sounds, league and Trading Day](docs/screenshots/06_settings.jpg)
 
 ## Running from source
 
